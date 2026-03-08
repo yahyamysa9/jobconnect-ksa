@@ -8,8 +8,9 @@ import { useState, useMemo } from 'react';
 const Jobs = () => {
   const [searchParams] = useSearchParams();
   const initialCategory = searchParams.get('category') || '';
+  const initialCity = searchParams.get('city') || '';
   const [selectedCategory, setSelectedCategory] = useState(initialCategory);
-  const [selectedCity, setSelectedCity] = useState('');
+  const [selectedCity, setSelectedCity] = useState(initialCity);
 
   const filteredJobs = useMemo(() => {
     return mockJobs.filter((job) => {

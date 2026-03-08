@@ -258,6 +258,7 @@ const AdminDashboard = () => {
               }`}
             >
               {tab.icon} {tab.label}
+              {tab.badge ? <span className="bg-destructive text-destructive-foreground text-xs rounded-full px-1.5 py-0.5 min-w-[20px] text-center">{tab.badge}</span> : null}
             </button>
           ))}
         </div>

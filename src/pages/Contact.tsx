@@ -38,10 +38,18 @@ const Contact = () => {
     }
 
     setSending(true);
-    // Simulate sending
-    await new Promise((r) => setTimeout(r, 1000));
-    toast.success('تم إرسال رسالتك بنجاح! سنتواصل معك قريباً.');
-    setForm({ name: '', email: '', subject: '', message: '' });
+    const { error: dbError } = await supabase.from('contact_messages').insert({
+      name: result.data.name,
+      email: result.data.email,
+      subject: result.data.subject,
+      message: result.data.message,
+    });
+    if (dbError) {
+      toast.error('حدث خطأ أثناء إرسال الرسالة. حاول مرة أخرى.');
+    } else {
+      toast.success('تم إرسال رسالتك بنجاح! سنتواصل معك قريباً.');
+      setForm({ name: '', email: '', subject: '', message: '' });
+    }
     setSending(false);
   };
 

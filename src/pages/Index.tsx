@@ -48,6 +48,7 @@ const Index = () => {
       <Header />
       <HeroSection />
       <CategoryGrid />
+      <AdBanner className="container" />
 
       <section className="container pb-12">
         <h2 className="text-2xl font-bold text-foreground mb-6">أحدث الوظائف</h2>

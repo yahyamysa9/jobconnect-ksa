@@ -32,7 +32,7 @@ const AdminLogin = () => {
           <div className="bg-card rounded-xl border border-border p-8 card-shadow">
             <div className="text-center mb-6">
               <div className="w-14 h-14 rounded-xl hero-gradient flex items-center justify-center mx-auto mb-3">
-                <span className="text-primary-foreground font-bold text-2xl">و</span>
+                <span className="text-primary-foreground font-bold text-2xl">م</span>
               </div>
               <h1 className="text-xl font-bold text-foreground">تسجيل دخول الأدمن</h1>
             </div>

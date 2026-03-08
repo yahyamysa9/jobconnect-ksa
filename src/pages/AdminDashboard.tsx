@@ -20,7 +20,7 @@ interface JobRow {
 const AdminDashboard = () => {
   const { user, isAdmin, loading, signOut } = useAuth();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<Tab>('jobs');
+  const [activeTab, setActiveTab] = useState<Tab>('stats');
   const [jobs, setJobs] = useState<JobRow[]>([]);
   const [categories, setCategories] = useState<{ id: string; name: string; icon: string | null }[]>([]);
   const [cities, setCities] = useState<{ id: string; name: string }[]>([]);

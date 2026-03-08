@@ -23,6 +23,9 @@ const Footer = () => {
               <Link to="/jobs" className="block text-sm text-muted-foreground hover:text-foreground transition-colors">جميع الوظائف</Link>
               <Link to="/categories" className="block text-sm text-muted-foreground hover:text-foreground transition-colors">التصنيفات</Link>
               <Link to="/cities" className="block text-sm text-muted-foreground hover:text-foreground transition-colors">المدن</Link>
+              <Link to="/about" className="block text-sm text-muted-foreground hover:text-foreground transition-colors">من نحن</Link>
+              <Link to="/terms" className="block text-sm text-muted-foreground hover:text-foreground transition-colors">سياسة الاستخدام</Link>
+              <Link to="/privacy" className="block text-sm text-muted-foreground hover:text-foreground transition-colors">سياسة الخصوصية</Link>
             </div>
           </div>
 

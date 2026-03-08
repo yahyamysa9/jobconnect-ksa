@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { Plus, Pencil, Trash2, LogOut, LayoutDashboard, Briefcase, Tag, MapPin, Download, Loader2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, LogOut, LayoutDashboard, Briefcase, Tag, MapPin, Download, Loader2, BarChart3 } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
-type Tab = 'jobs' | 'categories' | 'cities' | 'import';
+type Tab = 'stats' | 'jobs' | 'categories' | 'cities' | 'import';
 
 interface JobRow {
   id: string;
@@ -19,7 +20,7 @@ interface JobRow {
 const AdminDashboard = () => {
   const { user, isAdmin, loading, signOut } = useAuth();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<Tab>('jobs');
+  const [activeTab, setActiveTab] = useState<Tab>('stats');
   const [jobs, setJobs] = useState<JobRow[]>([]);
   const [categories, setCategories] = useState<{ id: string; name: string; icon: string | null }[]>([]);
   const [cities, setCities] = useState<{ id: string; name: string }[]>([]);
@@ -151,6 +152,23 @@ const AdminDashboard = () => {
     fetchCities();
   };
 
+  const COLORS = ['hsl(var(--primary))', 'hsl(var(--accent))', 'hsl(210, 70%, 55%)', 'hsl(150, 60%, 45%)', 'hsl(30, 80%, 55%)', 'hsl(340, 70%, 55%)', 'hsl(270, 60%, 55%)', 'hsl(190, 70%, 45%)'];
+
+  const statsByCategory = useMemo(() => {
+    const counts: Record<string, number> = {};
+    jobs.forEach(j => { counts[j.category] = (counts[j.category] || 0) + 1; });
+    return Object.entries(counts).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
+  }, [jobs]);
+
+  const statsByCity = useMemo(() => {
+    const counts: Record<string, number> = {};
+    jobs.forEach(j => { counts[j.city] = (counts[j.city] || 0) + 1; });
+    return Object.entries(counts).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
+  }, [jobs]);
+
+  const activeJobs = jobs.filter(j => j.is_active).length;
+  const inactiveJobs = jobs.length - activeJobs;
+
   if (loading) return <div className="min-h-screen flex items-center justify-center text-muted-foreground">جاري التحميل...</div>;
   if (!isAdmin) return null;
 
@@ -172,6 +190,7 @@ const AdminDashboard = () => {
   };
 
   const tabs: { key: Tab; label: string; icon: React.ReactNode }[] = [
+    { key: 'stats', label: 'الإحصائيات', icon: <BarChart3 className="w-4 h-4" /> },
     { key: 'jobs', label: 'الوظائف', icon: <Briefcase className="w-4 h-4" /> },
     { key: 'categories', label: 'التصنيفات', icon: <Tag className="w-4 h-4" /> },
     { key: 'cities', label: 'المدن', icon: <MapPin className="w-4 h-4" /> },
@@ -208,6 +227,77 @@ const AdminDashboard = () => {
             </button>
           ))}
         </div>
+
+        {/* Stats Tab */}
+        {activeTab === 'stats' && (
+          <div className="space-y-6">
+            {/* Summary Cards */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="bg-card rounded-xl border border-border p-5 card-shadow text-center">
+                <p className="text-3xl font-bold text-primary">{jobs.length}</p>
+                <p className="text-sm text-muted-foreground mt-1">إجمالي الوظائف</p>
+              </div>
+              <div className="bg-card rounded-xl border border-border p-5 card-shadow text-center">
+                <p className="text-3xl font-bold text-accent-foreground">{activeJobs}</p>
+                <p className="text-sm text-muted-foreground mt-1">وظائف نشطة</p>
+              </div>
+              <div className="bg-card rounded-xl border border-border p-5 card-shadow text-center">
+                <p className="text-3xl font-bold text-muted-foreground">{inactiveJobs}</p>
+                <p className="text-sm text-muted-foreground mt-1">وظائف متوقفة</p>
+              </div>
+              <div className="bg-card rounded-xl border border-border p-5 card-shadow text-center">
+                <p className="text-3xl font-bold text-foreground">{statsByCity.length}</p>
+                <p className="text-sm text-muted-foreground mt-1">مدن</p>
+              </div>
+            </div>
+
+            {/* Charts Row */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Category Pie Chart */}
+              <div className="bg-card rounded-xl border border-border p-6 card-shadow">
+                <h3 className="font-bold text-foreground mb-4">الوظائف حسب التصنيف</h3>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={statsByCategory}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={50}
+                        outerRadius={90}
+                        dataKey="value"
+                        nameKey="name"
+                        label={({ name, value }) => `${name} (${value})`}
+                        labelLine={false}
+                      >
+                        {statsByCategory.map((_, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* City Bar Chart */}
+              <div className="bg-card rounded-xl border border-border p-6 card-shadow">
+                <h3 className="font-bold text-foreground mb-4">الوظائف حسب المدينة</h3>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={statsByCity} layout="vertical" margin={{ right: 20, left: 60 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis type="number" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
+                      <YAxis type="category" dataKey="name" tick={{ fill: 'hsl(var(--foreground))', fontSize: 12 }} width={80} />
+                      <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '8px', color: 'hsl(var(--foreground))' }} />
+                      <Bar dataKey="value" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Jobs Tab */}
         {activeTab === 'jobs' && (

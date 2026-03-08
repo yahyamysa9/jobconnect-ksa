@@ -210,13 +210,7 @@ Deno.serve(async (req) => {
 
             if (!actualApplyLink && pageLinks.length > 0) {
               const externalLinks = pageLinks.filter((l: string) => 
-                !l.includes('ewdifh.com') && 
-                !l.includes('twitter.com') && 
-                !l.includes('facebook.com') && 
-                !l.includes('linkedin.com') &&
-                !l.includes('whatsapp.com') &&
-                !l.includes('t.me') &&
-                l.startsWith('http')
+                !isExcluded(l) && l.startsWith('http')
               );
               if (externalLinks.length > 0) {
                 actualApplyLink = externalLinks[externalLinks.length - 1];
@@ -224,9 +218,10 @@ Deno.serve(async (req) => {
             }
 
             if (!actualApplyLink) {
-              const externalLinks = [...jobMarkdown.matchAll(/\[([^\]]+)\]\((https?:\/\/(?!(?:www\.)?ewdifh\.com|twitter\.com|facebook\.com|linkedin\.com|whatsapp\.com|t\.me)[^)]+)\)/g)];
-              if (externalLinks.length > 0) {
-                actualApplyLink = externalLinks[externalLinks.length - 1][2];
+              const allLinks = [...jobMarkdown.matchAll(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g)];
+              const filtered = allLinks.filter(m => !isExcluded(m[2]));
+              if (filtered.length > 0) {
+                actualApplyLink = filtered[filtered.length - 1][2];
               }
             }
           }

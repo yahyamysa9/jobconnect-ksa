@@ -2,6 +2,7 @@ import { useSearchParams } from 'react-router-dom';
 import { Search } from 'lucide-react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import SEOHead from '@/components/SEOHead';
 import JobCard from '@/components/JobCard';
 import { useJobs } from '@/hooks/useJobs';
 import { mockJobs } from '@/data/mockJobs';
@@ -25,6 +26,10 @@ const SearchPage = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <SEOHead
+        title={query ? `نتائج البحث: ${query}` : 'البحث عن وظيفة'}
+        description={query ? `نتائج البحث عن "${query}" في وظائف السعودية` : 'ابحث عن وظيفتك المثالية في المملكة العربية السعودية'}
+      />
       <Header />
       <div className="container py-8">
         <h1 className="text-2xl font-bold text-foreground mb-6">البحث عن وظيفة</h1>

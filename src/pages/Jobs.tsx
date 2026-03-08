@@ -2,6 +2,7 @@ import { useSearchParams } from 'react-router-dom';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import JobCard from '@/components/JobCard';
+import SEOHead from '@/components/SEOHead';
 import { useJobs, useCategories, useCities } from '@/hooks/useJobs';
 import { mockJobs, categories as defaultCategories, cities as defaultCities } from '@/data/mockJobs';
 import { useState } from 'react';
@@ -31,11 +32,24 @@ const Jobs = () => {
         return true;
       });
 
+  const pageTitle = selectedCategory
+    ? `وظائف ${selectedCategory}`
+    : selectedCity
+      ? `وظائف في ${selectedCity}`
+      : 'جميع الوظائف';
+
+  const pageDesc = selectedCategory
+    ? `تصفح أحدث وظائف ${selectedCategory} المتاحة في السعودية`
+    : selectedCity
+      ? `تصفح أحدث الوظائف المتاحة في ${selectedCity}`
+      : 'تصفح جميع الوظائف المتاحة في المملكة العربية السعودية';
+
   return (
     <div className="min-h-screen flex flex-col">
+      <SEOHead title={pageTitle} description={pageDesc} />
       <Header />
       <div className="container py-8">
-        <h1 className="text-2xl font-bold text-foreground mb-6">جميع الوظائف</h1>
+        <h1 className="text-2xl font-bold text-foreground mb-6">{pageTitle}</h1>
 
         <div className="flex flex-wrap gap-3 mb-6">
           <select value={selectedCategory} onChange={(e) => setSelectedCategory(e.target.value)} className="px-4 py-2 rounded-lg border border-border bg-card text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring">

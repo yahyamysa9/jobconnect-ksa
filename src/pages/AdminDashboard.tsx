@@ -2,10 +2,20 @@ import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { Plus, Pencil, Trash2, LogOut, LayoutDashboard, Briefcase, Tag, MapPin, Download, Loader2, BarChart3 } from 'lucide-react';
+import { Plus, Pencil, Trash2, LogOut, LayoutDashboard, Briefcase, Tag, MapPin, Download, Loader2, BarChart3, MessageSquare, Eye, EyeOff } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
-type Tab = 'stats' | 'jobs' | 'categories' | 'cities' | 'import';
+type Tab = 'stats' | 'jobs' | 'categories' | 'cities' | 'import' | 'messages';
+
+interface ContactMessage {
+  id: string;
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+  is_read: boolean;
+  created_at: string;
+}
 
 interface JobRow {
   id: string;
@@ -41,6 +51,8 @@ const AdminDashboard = () => {
   const [newCityName, setNewCityName] = useState('');
   const [scraping, setScraping] = useState(false);
   const [scrapeResult, setScrapeResult] = useState<{ message: string; imported?: number; skipped?: number } | null>(null);
+  const [messages, setMessages] = useState<ContactMessage[]>([]);
+  const [expandedMessage, setExpandedMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (!loading && (!user || !isAdmin)) {
@@ -53,6 +65,7 @@ const AdminDashboard = () => {
       fetchJobs();
       fetchCategories();
       fetchCities();
+      fetchMessages();
     }
   }, [isAdmin]);
 
@@ -72,6 +85,24 @@ const AdminDashboard = () => {
   const fetchCities = async () => {
     const { data } = await supabase.from('cities').select('id, name').order('name');
     setCities(data || []);
+  };
+
+  const fetchMessages = async () => {
+    const { data } = await supabase
+      .from('contact_messages')
+      .select('*')
+      .order('created_at', { ascending: false });
+    setMessages((data as ContactMessage[]) || []);
+  };
+
+  const handleToggleRead = async (id: string, isRead: boolean) => {
+    await supabase.from('contact_messages').update({ is_read: !isRead }).eq('id', id);
+    fetchMessages();
+  };
+
+  const handleDeleteMessage = async (id: string) => {
+    await supabase.from('contact_messages').delete().eq('id', id);
+    fetchMessages();
   };
 
   const resetJobForm = () => {
@@ -189,9 +220,12 @@ const AdminDashboard = () => {
     setScraping(false);
   };
 
-  const tabs: { key: Tab; label: string; icon: React.ReactNode }[] = [
+  const unreadCount = messages.filter(m => !m.is_read).length;
+
+  const tabs: { key: Tab; label: string; icon: React.ReactNode; badge?: number }[] = [
     { key: 'stats', label: 'الإحصائيات', icon: <BarChart3 className="w-4 h-4" /> },
     { key: 'jobs', label: 'الوظائف', icon: <Briefcase className="w-4 h-4" /> },
+    { key: 'messages', label: 'الرسائل', icon: <MessageSquare className="w-4 h-4" />, badge: unreadCount },
     { key: 'categories', label: 'التصنيفات', icon: <Tag className="w-4 h-4" /> },
     { key: 'cities', label: 'المدن', icon: <MapPin className="w-4 h-4" /> },
     { key: 'import', label: 'جلب تلقائي', icon: <Download className="w-4 h-4" /> },
@@ -224,6 +258,7 @@ const AdminDashboard = () => {
               }`}
             >
               {tab.icon} {tab.label}
+              {tab.badge ? <span className="bg-destructive text-destructive-foreground text-xs rounded-full px-1.5 py-0.5 min-w-[20px] text-center">{tab.badge}</span> : null}
             </button>
           ))}
         </div>
@@ -355,6 +390,47 @@ const AdminDashboard = () => {
               ))}
               {jobs.length === 0 && <p className="text-center text-muted-foreground py-8">لا توجد وظائف بعد</p>}
             </div>
+          </div>
+        )}
+
+        {/* Messages Tab */}
+        {activeTab === 'messages' && (
+          <div>
+            <h2 className="text-lg font-bold text-foreground mb-4">الرسائل الواردة ({messages.length})</h2>
+            {messages.length === 0 ? (
+              <p className="text-center text-muted-foreground py-8">لا توجد رسائل بعد</p>
+            ) : (
+              <div className="space-y-3">
+                {messages.map((msg) => (
+                  <div key={msg.id} className={`bg-card rounded-xl border p-4 card-shadow transition-colors ${msg.is_read ? 'border-border' : 'border-primary/30 bg-primary/5'}`}>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          {!msg.is_read && <span className="w-2 h-2 rounded-full bg-primary shrink-0" />}
+                          <h3 className="font-bold text-foreground text-sm truncate">{msg.subject}</h3>
+                        </div>
+                        <p className="text-xs text-muted-foreground mb-1">{msg.name} • {msg.email}</p>
+                        <p className="text-xs text-muted-foreground">{new Date(msg.created_at).toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button onClick={() => setExpandedMessage(expandedMessage === msg.id ? null : msg.id)} className="p-1.5 rounded hover:bg-muted transition-colors" title="عرض الرسالة">
+                          <Eye className="w-4 h-4 text-muted-foreground" />
+                        </button>
+                        <button onClick={() => handleToggleRead(msg.id, msg.is_read)} className="p-1.5 rounded hover:bg-muted transition-colors" title={msg.is_read ? 'تعيين كغير مقروء' : 'تعيين كمقروء'}>
+                          {msg.is_read ? <EyeOff className="w-4 h-4 text-muted-foreground" /> : <Eye className="w-4 h-4 text-primary" />}
+                        </button>
+                        <button onClick={() => handleDeleteMessage(msg.id)} className="p-1.5 rounded hover:bg-destructive/10 transition-colors"><Trash2 className="w-4 h-4 text-destructive" /></button>
+                      </div>
+                    </div>
+                    {expandedMessage === msg.id && (
+                      <div className="mt-3 pt-3 border-t border-border">
+                        <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{msg.message}</p>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 

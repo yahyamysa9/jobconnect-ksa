@@ -6,9 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Send, Mail, MessageSquare } from 'lucide-react';
+import { Send, MessageSquare } from 'lucide-react';
 import { toast } from 'sonner';
 import { z } from 'zod';
+import { supabase } from '@/integrations/supabase/client';
 
 const contactSchema = z.object({
   name: z.string().trim().min(1, 'الاسم مطلوب').max(100, 'الاسم طويل جداً'),
@@ -37,10 +38,18 @@ const Contact = () => {
     }
 
     setSending(true);
-    // Simulate sending
-    await new Promise((r) => setTimeout(r, 1000));
-    toast.success('تم إرسال رسالتك بنجاح! سنتواصل معك قريباً.');
-    setForm({ name: '', email: '', subject: '', message: '' });
+    const { error: dbError } = await supabase.from('contact_messages').insert({
+      name: result.data.name,
+      email: result.data.email,
+      subject: result.data.subject,
+      message: result.data.message,
+    });
+    if (dbError) {
+      toast.error('حدث خطأ أثناء إرسال الرسالة. حاول مرة أخرى.');
+    } else {
+      toast.success('تم إرسال رسالتك بنجاح! سنتواصل معك قريباً.');
+      setForm({ name: '', email: '', subject: '', message: '' });
+    }
     setSending(false);
   };
 

@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { Plus, Pencil, Trash2, LogOut, LayoutDashboard, Briefcase, Tag, MapPin } from 'lucide-react';
+import { Plus, Pencil, Trash2, LogOut, LayoutDashboard, Briefcase, Tag, MapPin, Download, Loader2 } from 'lucide-react';
 
-type Tab = 'jobs' | 'categories' | 'cities';
+type Tab = 'jobs' | 'categories' | 'cities' | 'import';
 
 interface JobRow {
   id: string;
@@ -38,6 +38,8 @@ const AdminDashboard = () => {
   // Category/City form
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newCityName, setNewCityName] = useState('');
+  const [scraping, setScraping] = useState(false);
+  const [scrapeResult, setScrapeResult] = useState<{ message: string; imported?: number; skipped?: number } | null>(null);
 
   useEffect(() => {
     if (!loading && (!user || !isAdmin)) {
@@ -152,10 +154,28 @@ const AdminDashboard = () => {
   if (loading) return <div className="min-h-screen flex items-center justify-center text-muted-foreground">جاري التحميل...</div>;
   if (!isAdmin) return null;
 
+  const handleScrapeJobs = async () => {
+    setScraping(true);
+    setScrapeResult(null);
+    try {
+      const { data, error } = await supabase.functions.invoke('scrape-jobs');
+      if (error) {
+        setScrapeResult({ message: `خطأ: ${error.message}` });
+      } else {
+        setScrapeResult(data);
+        fetchJobs();
+      }
+    } catch (e) {
+      setScrapeResult({ message: 'حدث خطأ أثناء جلب الوظائف' });
+    }
+    setScraping(false);
+  };
+
   const tabs: { key: Tab; label: string; icon: React.ReactNode }[] = [
     { key: 'jobs', label: 'الوظائف', icon: <Briefcase className="w-4 h-4" /> },
     { key: 'categories', label: 'التصنيفات', icon: <Tag className="w-4 h-4" /> },
     { key: 'cities', label: 'المدن', icon: <MapPin className="w-4 h-4" /> },
+    { key: 'import', label: 'جلب تلقائي', icon: <Download className="w-4 h-4" /> },
   ];
 
   return (
@@ -282,6 +302,38 @@ const AdminDashboard = () => {
                   <button onClick={() => handleDeleteCity(city.id)} className="p-1.5 rounded hover:bg-destructive/10 transition-colors"><Trash2 className="w-4 h-4 text-destructive" /></button>
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+
+        {/* Import Tab */}
+        {activeTab === 'import' && (
+          <div>
+            <h2 className="text-lg font-bold text-foreground mb-4">جلب الوظائف تلقائياً</h2>
+            <div className="bg-card rounded-xl border border-border p-6 card-shadow">
+              <p className="text-sm text-muted-foreground mb-4">
+                جلب أحدث الوظائف من موقع "أي وظيفة" (ewdifh.com) تلقائياً. النظام يتحقق من عدم تكرار الوظائف قبل الإضافة.
+              </p>
+              <button
+                onClick={handleScrapeJobs}
+                disabled={scraping}
+                className="flex items-center gap-2 px-6 py-3 rounded-lg hero-gradient text-primary-foreground font-bold text-sm hover:opacity-90 transition-opacity disabled:opacity-50"
+              >
+                {scraping ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                {scraping ? 'جاري الجلب...' : 'جلب الوظائف الآن'}
+              </button>
+
+              {scrapeResult && (
+                <div className="mt-4 p-4 rounded-lg bg-muted">
+                  <p className="text-sm font-medium text-foreground">{scrapeResult.message}</p>
+                  {scrapeResult.imported !== undefined && (
+                    <div className="flex gap-4 mt-2 text-xs text-muted-foreground">
+                      <span>✅ تم جلب: {scrapeResult.imported}</span>
+                      <span>⏭️ مكررة: {scrapeResult.skipped}</span>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         )}

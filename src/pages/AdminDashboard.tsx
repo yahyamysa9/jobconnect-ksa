@@ -393,6 +393,47 @@ const AdminDashboard = () => {
           </div>
         )}
 
+        {/* Messages Tab */}
+        {activeTab === 'messages' && (
+          <div>
+            <h2 className="text-lg font-bold text-foreground mb-4">الرسائل الواردة ({messages.length})</h2>
+            {messages.length === 0 ? (
+              <p className="text-center text-muted-foreground py-8">لا توجد رسائل بعد</p>
+            ) : (
+              <div className="space-y-3">
+                {messages.map((msg) => (
+                  <div key={msg.id} className={`bg-card rounded-xl border p-4 card-shadow transition-colors ${msg.is_read ? 'border-border' : 'border-primary/30 bg-primary/5'}`}>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          {!msg.is_read && <span className="w-2 h-2 rounded-full bg-primary shrink-0" />}
+                          <h3 className="font-bold text-foreground text-sm truncate">{msg.subject}</h3>
+                        </div>
+                        <p className="text-xs text-muted-foreground mb-1">{msg.name} • {msg.email}</p>
+                        <p className="text-xs text-muted-foreground">{new Date(msg.created_at).toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button onClick={() => setExpandedMessage(expandedMessage === msg.id ? null : msg.id)} className="p-1.5 rounded hover:bg-muted transition-colors" title="عرض الرسالة">
+                          <Eye className="w-4 h-4 text-muted-foreground" />
+                        </button>
+                        <button onClick={() => handleToggleRead(msg.id, msg.is_read)} className="p-1.5 rounded hover:bg-muted transition-colors" title={msg.is_read ? 'تعيين كغير مقروء' : 'تعيين كمقروء'}>
+                          {msg.is_read ? <EyeOff className="w-4 h-4 text-muted-foreground" /> : <Eye className="w-4 h-4 text-primary" />}
+                        </button>
+                        <button onClick={() => handleDeleteMessage(msg.id)} className="p-1.5 rounded hover:bg-destructive/10 transition-colors"><Trash2 className="w-4 h-4 text-destructive" /></button>
+                      </div>
+                    </div>
+                    {expandedMessage === msg.id && (
+                      <div className="mt-3 pt-3 border-t border-border">
+                        <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{msg.message}</p>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Categories Tab */}
         {activeTab === 'categories' && (
           <div>

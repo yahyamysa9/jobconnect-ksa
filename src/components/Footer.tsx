@@ -8,13 +8,13 @@ const Footer = () => {
           <div>
             <div className="flex items-center gap-2 mb-3">
               <div className="w-8 h-8 rounded-lg hero-gradient flex items-center justify-center">
-                <span className="text-primary-foreground font-bold">و</span>
-              </div>
-              <span className="text-lg font-bold text-foreground">وظيفتك</span>
+              <span className="text-primary-foreground font-bold">م</span>
             </div>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              منصة سعودية لعرض أحدث الوظائف الحكومية والعسكرية ووظائف القطاع الخاص وبرامج التدريب.
-            </p>
+            <span className="text-lg font-bold text-foreground">مسارك</span>
+          </div>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            منصة سعودية لعرض أحدث الوظائف الحكومية والعسكرية ووظائف القطاع الخاص وبرامج التدريب.
+          </p>
           </div>
 
           <div>

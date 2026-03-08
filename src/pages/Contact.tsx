@@ -120,12 +120,6 @@ const Contact = () => {
             </Button>
           </form>
 
-          <div className="mt-8 text-center">
-            <div className="flex items-center justify-center gap-2 text-muted-foreground">
-              <Mail className="w-4 h-4" />
-              <span className="text-sm">أو تواصل معنا عبر البريد: info@masarak.sa</span>
-            </div>
-          </div>
         </div>
       </main>
       <Footer />

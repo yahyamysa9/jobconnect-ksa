@@ -5,12 +5,12 @@ import SEOHead from '@/components/SEOHead';
 const Terms = () => {
   return (
     <div className="min-h-screen flex flex-col">
-      <SEOHead title="سياسة الاستخدام - وظيفتك" description="سياسة استخدام منصة وظيفتك للوظائف في المملكة العربية السعودية" />
+      <SEOHead title="سياسة الاستخدام - مسارك" description="سياسة استخدام منصة مسارك للوظائف في المملكة العربية السعودية" />
       <Header />
       <main className="container py-10 flex-1">
         <h1 className="text-3xl font-bold text-foreground mb-6">سياسة الاستخدام</h1>
         <div className="prose prose-lg max-w-none space-y-4 text-muted-foreground leading-relaxed" dir="rtl">
-          <p>باستخدامك لمنصة <strong className="text-foreground">وظيفتك</strong>، فإنك توافق على الالتزام بالشروط والأحكام التالية:</p>
+          <p>باستخدامك لمنصة <strong className="text-foreground">مسارك</strong>، فإنك توافق على الالتزام بالشروط والأحكام التالية:</p>
 
           <h2 className="text-xl font-bold text-foreground mt-8">1. طبيعة الخدمة</h2>
           <p>منصة وظيفتك هي منصة إعلانية تعرض الوظائف المتاحة من مصادر متعددة. لا تُعد المنصة وسيطاً للتوظيف ولا تضمن الحصول على وظيفة.</p>

@@ -9,7 +9,7 @@ interface SEOHeadProps {
   jsonLd?: Record<string, unknown>;
 }
 
-const SITE_NAME = 'وظيفتك';
+const SITE_NAME = 'مسارك';
 const DEFAULT_IMAGE = 'https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/1d3aed5a-93ec-458d-a690-357dbf023204/id-preview-cd132427--3e2732fb-1553-40be-976e-16adbcd2c16e.lovable.app-1772951621569.png';
 
 const SEOHead = ({ title, description, canonical, type = 'website', image, jsonLd }: SEOHeadProps) => {

@@ -5,12 +5,12 @@ import SEOHead from '@/components/SEOHead';
 const Privacy = () => {
   return (
     <div className="min-h-screen flex flex-col">
-      <SEOHead title="سياسة الخصوصية - وظيفتك" description="سياسة الخصوصية لمنصة وظيفتك للوظائف في المملكة العربية السعودية" />
+      <SEOHead title="سياسة الخصوصية - مسارك" description="سياسة الخصوصية لمنصة مسارك للوظائف في المملكة العربية السعودية" />
       <Header />
       <main className="container py-10 flex-1">
         <h1 className="text-3xl font-bold text-foreground mb-6">سياسة الخصوصية</h1>
         <div className="prose prose-lg max-w-none space-y-4 text-muted-foreground leading-relaxed" dir="rtl">
-          <p>نلتزم في <strong className="text-foreground">وظيفتك</strong> بحماية خصوصية مستخدمينا. توضح هذه السياسة كيفية جمع واستخدام وحماية معلوماتك.</p>
+          <p>نلتزم في <strong className="text-foreground">مسارك</strong> بحماية خصوصية مستخدمينا. توضح هذه السياسة كيفية جمع واستخدام وحماية معلوماتك.</p>
 
           <h2 className="text-xl font-bold text-foreground mt-8">1. المعلومات التي نجمعها</h2>
           <ul className="list-disc list-inside space-y-2">

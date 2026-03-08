@@ -41,7 +41,7 @@ const Footer = () => {
         </div>
 
         <div className="border-t border-border mt-8 pt-6 text-center">
-          <p className="text-xs text-muted-foreground">© 2026 وظيفتك - جميع الحقوق محفوظة</p>
+          <p className="text-xs text-muted-foreground">© 2026 مسارك - جميع الحقوق محفوظة</p>
         </div>
       </div>
     </footer>

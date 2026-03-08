@@ -166,7 +166,7 @@ Deno.serve(async (req) => {
       }
 
       // Try to get actual apply link from individual job page
-      let actualApplyLink = job.apply_link;
+      let actualApplyLink = '';
       try {
         const jobPageResponse = await fetch('https://api.firecrawl.dev/v1/scrape', {
           method: 'POST',
@@ -176,7 +176,7 @@ Deno.serve(async (req) => {
           },
           body: JSON.stringify({
             url: job.source_url,
-            formats: ['markdown'],
+            formats: ['markdown', 'links'],
             onlyMainContent: true,
             waitFor: 3000,
           }),
@@ -185,23 +185,55 @@ Deno.serve(async (req) => {
         if (jobPageResponse.ok) {
           const jobPageData = await jobPageResponse.json();
           const jobMarkdown = jobPageData.data?.markdown || jobPageData.markdown || '';
+          const pageLinks: string[] = jobPageData.data?.links || [];
           
-          // Look for apply/registration links
-          const applyLinkMatch = jobMarkdown.match(/\[(?:رابط التقديم|التقديم|قدم الآن|سجل الآن|Apply|للتقديم)[^\]]*\]\(([^)]+)\)/i);
-          if (applyLinkMatch && !applyLinkMatch[1].includes('ewdifh.com')) {
-            actualApplyLink = applyLinkMatch[1];
-          } else {
-            // Try to find any external link that looks like an apply link
-            const externalLinks = [...jobMarkdown.matchAll(/\[([^\]]+)\]\((https?:\/\/(?!www\.ewdifh\.com)[^)]+)\)/g)];
+          // 1. Look for explicit apply links in markdown
+          const applyPatterns = [
+            /\[(?:رابط التقديم|التقديم|قدم الآن|سجل الآن|للتقديم|اضغط هنا للتقديم|Apply|تقديم)[^\]]*\]\(([^)]+)\)/gi,
+            /\[(?:[^\]]*تقديم[^\]]*|[^\]]*التسجيل[^\]]*)\]\(([^)]+)\)/gi,
+          ];
+          
+          for (const pattern of applyPatterns) {
+            const matches = [...jobMarkdown.matchAll(pattern)];
+            for (const match of matches) {
+              if (!match[1].includes('ewdifh.com')) {
+                actualApplyLink = match[1];
+                break;
+              }
+            }
+            if (actualApplyLink) break;
+          }
+
+          // 2. Check extracted links for external apply URLs
+          if (!actualApplyLink && pageLinks.length > 0) {
+            const externalLinks = pageLinks.filter((l: string) => 
+              !l.includes('ewdifh.com') && 
+              !l.includes('twitter.com') && 
+              !l.includes('facebook.com') && 
+              !l.includes('linkedin.com') &&
+              !l.includes('whatsapp.com') &&
+              !l.includes('t.me') &&
+              l.startsWith('http')
+            );
             if (externalLinks.length > 0) {
-              // Use the last external link (usually the apply button)
+              actualApplyLink = externalLinks[externalLinks.length - 1];
+            }
+          }
+
+          // 3. Fallback: find any external link in markdown
+          if (!actualApplyLink) {
+            const externalLinks = [...jobMarkdown.matchAll(/\[([^\]]+)\]\((https?:\/\/(?!(?:www\.)?ewdifh\.com|twitter\.com|facebook\.com|linkedin\.com|whatsapp\.com|t\.me)[^)]+)\)/g)];
+            if (externalLinks.length > 0) {
               actualApplyLink = externalLinks[externalLinks.length - 1][2];
             }
           }
         }
       } catch (e) {
-        console.log('Could not fetch job detail page, using listing link:', e);
+        console.log('Could not fetch job detail page:', e);
       }
+
+      // If no external link found, leave empty rather than linking to ewdifh
+      console.log('Job:', job.title, '| Apply link:', actualApplyLink || '(none found)');
 
       const { error: insertError } = await supabase.from('jobs').insert({
         title: job.title,

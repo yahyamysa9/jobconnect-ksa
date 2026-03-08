@@ -130,6 +130,7 @@ const JobDetail = () => {
             <p className="text-sm text-muted-foreground">لا يوجد رابط تقديم متاح حالياً</p>
           )}
         </div>
+        <AdBanner className="mt-6" />
       </div>
       <div className="flex-1" />
       <Footer />

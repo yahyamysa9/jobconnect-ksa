@@ -228,6 +228,77 @@ const AdminDashboard = () => {
           ))}
         </div>
 
+        {/* Stats Tab */}
+        {activeTab === 'stats' && (
+          <div className="space-y-6">
+            {/* Summary Cards */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="bg-card rounded-xl border border-border p-5 card-shadow text-center">
+                <p className="text-3xl font-bold text-primary">{jobs.length}</p>
+                <p className="text-sm text-muted-foreground mt-1">إجمالي الوظائف</p>
+              </div>
+              <div className="bg-card rounded-xl border border-border p-5 card-shadow text-center">
+                <p className="text-3xl font-bold text-accent-foreground">{activeJobs}</p>
+                <p className="text-sm text-muted-foreground mt-1">وظائف نشطة</p>
+              </div>
+              <div className="bg-card rounded-xl border border-border p-5 card-shadow text-center">
+                <p className="text-3xl font-bold text-muted-foreground">{inactiveJobs}</p>
+                <p className="text-sm text-muted-foreground mt-1">وظائف متوقفة</p>
+              </div>
+              <div className="bg-card rounded-xl border border-border p-5 card-shadow text-center">
+                <p className="text-3xl font-bold text-foreground">{statsByCity.length}</p>
+                <p className="text-sm text-muted-foreground mt-1">مدن</p>
+              </div>
+            </div>
+
+            {/* Charts Row */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Category Pie Chart */}
+              <div className="bg-card rounded-xl border border-border p-6 card-shadow">
+                <h3 className="font-bold text-foreground mb-4">الوظائف حسب التصنيف</h3>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={statsByCategory}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={50}
+                        outerRadius={90}
+                        dataKey="value"
+                        nameKey="name"
+                        label={({ name, value }) => `${name} (${value})`}
+                        labelLine={false}
+                      >
+                        {statsByCategory.map((_, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* City Bar Chart */}
+              <div className="bg-card rounded-xl border border-border p-6 card-shadow">
+                <h3 className="font-bold text-foreground mb-4">الوظائف حسب المدينة</h3>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={statsByCity} layout="vertical" margin={{ right: 20, left: 60 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis type="number" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
+                      <YAxis type="category" dataKey="name" tick={{ fill: 'hsl(var(--foreground))', fontSize: 12 }} width={80} />
+                      <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '8px', color: 'hsl(var(--foreground))' }} />
+                      <Bar dataKey="value" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Jobs Tab */}
         {activeTab === 'jobs' && (
           <div>

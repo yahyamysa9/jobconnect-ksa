@@ -4,6 +4,7 @@ import HeroSection from '@/components/HeroSection';
 import CategoryGrid from '@/components/CategoryGrid';
 import JobCard from '@/components/JobCard';
 import SEOHead from '@/components/SEOHead';
+import AdBanner from '@/components/AdBanner';
 import { useJobs } from '@/hooks/useJobs';
 import { mockJobs } from '@/data/mockJobs';
 

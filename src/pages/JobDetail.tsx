@@ -3,6 +3,7 @@ import { ArrowRight, MapPin, Calendar, Building2, ExternalLink, Share2 } from 'l
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import SEOHead from '@/components/SEOHead';
+import AdBanner from '@/components/AdBanner';
 import { useJob } from '@/hooks/useJobs';
 import { mockJobs } from '@/data/mockJobs';
 

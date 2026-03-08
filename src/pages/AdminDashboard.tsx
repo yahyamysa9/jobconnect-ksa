@@ -220,9 +220,12 @@ const AdminDashboard = () => {
     setScraping(false);
   };
 
-  const tabs: { key: Tab; label: string; icon: React.ReactNode }[] = [
+  const unreadCount = messages.filter(m => !m.is_read).length;
+
+  const tabs: { key: Tab; label: string; icon: React.ReactNode; badge?: number }[] = [
     { key: 'stats', label: 'الإحصائيات', icon: <BarChart3 className="w-4 h-4" /> },
     { key: 'jobs', label: 'الوظائف', icon: <Briefcase className="w-4 h-4" /> },
+    { key: 'messages', label: 'الرسائل', icon: <MessageSquare className="w-4 h-4" />, badge: unreadCount },
     { key: 'categories', label: 'التصنيفات', icon: <Tag className="w-4 h-4" /> },
     { key: 'cities', label: 'المدن', icon: <MapPin className="w-4 h-4" /> },
     { key: 'import', label: 'جلب تلقائي', icon: <Download className="w-4 h-4" /> },

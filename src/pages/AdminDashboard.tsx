@@ -152,6 +152,23 @@ const AdminDashboard = () => {
     fetchCities();
   };
 
+  const COLORS = ['hsl(var(--primary))', 'hsl(var(--accent))', 'hsl(210, 70%, 55%)', 'hsl(150, 60%, 45%)', 'hsl(30, 80%, 55%)', 'hsl(340, 70%, 55%)', 'hsl(270, 60%, 55%)', 'hsl(190, 70%, 45%)'];
+
+  const statsByCategory = useMemo(() => {
+    const counts: Record<string, number> = {};
+    jobs.forEach(j => { counts[j.category] = (counts[j.category] || 0) + 1; });
+    return Object.entries(counts).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
+  }, [jobs]);
+
+  const statsByCity = useMemo(() => {
+    const counts: Record<string, number> = {};
+    jobs.forEach(j => { counts[j.city] = (counts[j.city] || 0) + 1; });
+    return Object.entries(counts).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
+  }, [jobs]);
+
+  const activeJobs = jobs.filter(j => j.is_active).length;
+  const inactiveJobs = jobs.length - activeJobs;
+
   if (loading) return <div className="min-h-screen flex items-center justify-center text-muted-foreground">جاري التحميل...</div>;
   if (!isAdmin) return null;
 
@@ -171,23 +188,6 @@ const AdminDashboard = () => {
     }
     setScraping(false);
   };
-
-  const COLORS = ['hsl(var(--primary))', 'hsl(var(--accent))', 'hsl(210, 70%, 55%)', 'hsl(150, 60%, 45%)', 'hsl(30, 80%, 55%)', 'hsl(340, 70%, 55%)', 'hsl(270, 60%, 55%)', 'hsl(190, 70%, 45%)'];
-
-  const statsByCategory = useMemo(() => {
-    const counts: Record<string, number> = {};
-    jobs.forEach(j => { counts[j.category] = (counts[j.category] || 0) + 1; });
-    return Object.entries(counts).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
-  }, [jobs]);
-
-  const statsByCity = useMemo(() => {
-    const counts: Record<string, number> = {};
-    jobs.forEach(j => { counts[j.city] = (counts[j.city] || 0) + 1; });
-    return Object.entries(counts).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
-  }, [jobs]);
-
-  const activeJobs = jobs.filter(j => j.is_active).length;
-  const inactiveJobs = jobs.length - activeJobs;
 
   const tabs: { key: Tab; label: string; icon: React.ReactNode }[] = [
     { key: 'stats', label: 'الإحصائيات', icon: <BarChart3 className="w-4 h-4" /> },

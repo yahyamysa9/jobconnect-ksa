@@ -51,6 +51,8 @@ const AdminDashboard = () => {
   const [newCityName, setNewCityName] = useState('');
   const [scraping, setScraping] = useState(false);
   const [scrapeResult, setScrapeResult] = useState<{ message: string; imported?: number; skipped?: number } | null>(null);
+  const [messages, setMessages] = useState<ContactMessage[]>([]);
+  const [expandedMessage, setExpandedMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (!loading && (!user || !isAdmin)) {

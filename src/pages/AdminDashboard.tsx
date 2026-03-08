@@ -152,10 +152,32 @@ const AdminDashboard = () => {
   if (loading) return <div className="min-h-screen flex items-center justify-center text-muted-foreground">جاري التحميل...</div>;
   if (!isAdmin) return null;
 
+  // Scrape state
+  const [scraping, setScraping] = useState(false);
+  const [scrapeResult, setScrapeResult] = useState<{ message: string; imported?: number; skipped?: number } | null>(null);
+
+  const handleScrapeJobs = async () => {
+    setScraping(true);
+    setScrapeResult(null);
+    try {
+      const { data, error } = await supabase.functions.invoke('scrape-jobs');
+      if (error) {
+        setScrapeResult({ message: `خطأ: ${error.message}` });
+      } else {
+        setScrapeResult(data);
+        fetchJobs();
+      }
+    } catch (e) {
+      setScrapeResult({ message: 'حدث خطأ أثناء جلب الوظائف' });
+    }
+    setScraping(false);
+  };
+
   const tabs: { key: Tab; label: string; icon: React.ReactNode }[] = [
     { key: 'jobs', label: 'الوظائف', icon: <Briefcase className="w-4 h-4" /> },
     { key: 'categories', label: 'التصنيفات', icon: <Tag className="w-4 h-4" /> },
     { key: 'cities', label: 'المدن', icon: <MapPin className="w-4 h-4" /> },
+    { key: 'import', label: 'جلب تلقائي', icon: <Download className="w-4 h-4" /> },
   ];
 
   return (

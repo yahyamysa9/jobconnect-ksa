@@ -4,6 +4,7 @@ import HeroSection from '@/components/HeroSection';
 import CategoryGrid from '@/components/CategoryGrid';
 import JobCard from '@/components/JobCard';
 import SEOHead from '@/components/SEOHead';
+import AdBanner from '@/components/AdBanner';
 import { useJobs } from '@/hooks/useJobs';
 import { mockJobs } from '@/data/mockJobs';
 
@@ -47,6 +48,7 @@ const Index = () => {
       <Header />
       <HeroSection />
       <CategoryGrid />
+      <AdBanner className="container" />
 
       <section className="container pb-12">
         <h2 className="text-2xl font-bold text-foreground mb-6">أحدث الوظائف</h2>

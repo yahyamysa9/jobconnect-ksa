@@ -3,6 +3,7 @@ import { ArrowRight, MapPin, Calendar, Building2, ExternalLink, Share2 } from 'l
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import SEOHead from '@/components/SEOHead';
+import AdBanner from '@/components/AdBanner';
 import { useJob } from '@/hooks/useJobs';
 import { mockJobs } from '@/data/mockJobs';
 
@@ -129,6 +130,7 @@ const JobDetail = () => {
             <p className="text-sm text-muted-foreground">لا يوجد رابط تقديم متاح حالياً</p>
           )}
         </div>
+        <AdBanner className="mt-6" />
       </div>
       <div className="flex-1" />
       <Footer />

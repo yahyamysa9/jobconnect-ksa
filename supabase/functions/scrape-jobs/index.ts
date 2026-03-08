@@ -192,10 +192,15 @@ Deno.serve(async (req) => {
               /\[(?:[^\]]*تقديم[^\]]*|[^\]]*التسجيل[^\]]*)\]\(([^)]+)\)/gi,
             ];
             
+            const isExcluded = (url: string) =>
+              url.includes('ewdifh.com') || url.includes('t.me') || url.includes('twitter.com') ||
+              url.includes('facebook.com') || url.includes('linkedin.com') || url.includes('whatsapp.com') ||
+              url.includes('x.com') || url.includes('telegram.org') || url.includes('share');
+
             for (const pattern of applyPatterns) {
               const matches = [...jobMarkdown.matchAll(pattern)];
               for (const match of matches) {
-                if (!match[1].includes('ewdifh.com')) {
+                if (!isExcluded(match[1])) {
                   actualApplyLink = match[1];
                   break;
                 }

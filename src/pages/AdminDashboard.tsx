@@ -87,6 +87,24 @@ const AdminDashboard = () => {
     setCities(data || []);
   };
 
+  const fetchMessages = async () => {
+    const { data } = await supabase
+      .from('contact_messages')
+      .select('*')
+      .order('created_at', { ascending: false });
+    setMessages((data as ContactMessage[]) || []);
+  };
+
+  const handleToggleRead = async (id: string, isRead: boolean) => {
+    await supabase.from('contact_messages').update({ is_read: !isRead }).eq('id', id);
+    fetchMessages();
+  };
+
+  const handleDeleteMessage = async (id: string) => {
+    await supabase.from('contact_messages').delete().eq('id', id);
+    fetchMessages();
+  };
+
   const resetJobForm = () => {
     setJobTitle(''); setJobCompany(''); setJobCity(''); setJobCategory('');
     setJobDescription(''); setJobRequirements(''); setJobApplyLink('');

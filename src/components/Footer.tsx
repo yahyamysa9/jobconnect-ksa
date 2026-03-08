@@ -8,13 +8,13 @@ const Footer = () => {
           <div>
             <div className="flex items-center gap-2 mb-3">
               <div className="w-8 h-8 rounded-lg hero-gradient flex items-center justify-center">
-                <span className="text-primary-foreground font-bold">و</span>
-              </div>
-              <span className="text-lg font-bold text-foreground">وظيفتك</span>
+              <span className="text-primary-foreground font-bold">م</span>
             </div>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              منصة سعودية لعرض أحدث الوظائف الحكومية والعسكرية ووظائف القطاع الخاص وبرامج التدريب.
-            </p>
+            <span className="text-lg font-bold text-foreground">مسارك</span>
+          </div>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            منصة سعودية لعرض أحدث الوظائف الحكومية والعسكرية ووظائف القطاع الخاص وبرامج التدريب.
+          </p>
           </div>
 
           <div>
@@ -41,7 +41,7 @@ const Footer = () => {
         </div>
 
         <div className="border-t border-border mt-8 pt-6 text-center">
-          <p className="text-xs text-muted-foreground">© 2026 وظيفتك - جميع الحقوق محفوظة</p>
+          <p className="text-xs text-muted-foreground">© 2026 مسارك - جميع الحقوق محفوظة</p>
         </div>
       </div>
     </footer>

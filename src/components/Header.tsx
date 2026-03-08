@@ -10,9 +10,9 @@ const Header = () => {
       <div className="container flex items-center justify-between h-16">
         <Link to="/" className="flex items-center gap-2">
           <div className="w-9 h-9 rounded-lg hero-gradient flex items-center justify-center">
-            <span className="text-primary-foreground font-bold text-lg">و</span>
+            <span className="text-primary-foreground font-bold text-lg">م</span>
           </div>
-          <span className="text-xl font-bold text-foreground">وظيفتك</span>
+          <span className="text-xl font-bold text-foreground">مسارك</span>
         </Link>
 
         <nav className="hidden md:flex items-center gap-6">

@@ -30,14 +30,14 @@ const Index = () => {
     <div className="min-h-screen flex flex-col">
       <SEOHead
         title="أحدث الوظائف في السعودية"
-        description="منصة وظيفتك لعرض أحدث الوظائف الحكومية والعسكرية ووظائف القطاع الخاص وبرامج التدريب في المملكة العربية السعودية"
+        description="منصة مسارك لعرض أحدث الوظائف الحكومية والعسكرية ووظائف القطاع الخاص وبرامج التدريب في المملكة العربية السعودية"
         canonical="https://jobconnect-ksa.lovable.app/"
         jsonLd={{
           '@context': 'https://schema.org',
           '@type': 'WebSite',
-          name: 'وظيفتك',
+          name: 'مسارك',
           url: 'https://jobconnect-ksa.lovable.app',
-          description: 'منصة وظيفتك لعرض أحدث الوظائف في المملكة العربية السعودية',
+          description: 'منصة مسارك لعرض أحدث الوظائف في المملكة العربية السعودية',
           potentialAction: {
             '@type': 'SearchAction',
             target: 'https://jobconnect-ksa.lovable.app/search?q={search_term_string}',

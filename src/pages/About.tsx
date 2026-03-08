@@ -5,13 +5,13 @@ import SEOHead from '@/components/SEOHead';
 const About = () => {
   return (
     <div className="min-h-screen flex flex-col">
-      <SEOHead title="من نحن - وظيفتك" description="تعرف على منصة وظيفتك لعرض أحدث الوظائف في المملكة العربية السعودية" />
+      <SEOHead title="من نحن - مسارك" description="تعرف على منصة مسارك لعرض أحدث الوظائف في المملكة العربية السعودية" />
       <Header />
       <main className="container py-10 flex-1">
         <h1 className="text-3xl font-bold text-foreground mb-6">من نحن</h1>
         <div className="prose prose-lg max-w-none space-y-4 text-muted-foreground leading-relaxed" dir="rtl">
           <p>
-            <strong className="text-foreground">وظيفتك</strong> هي منصة سعودية متخصصة في جمع وعرض أحدث الفرص الوظيفية في المملكة العربية السعودية، تشمل الوظائف الحكومية والعسكرية ووظائف القطاع الخاص وبرامج التدريب.
+            <strong className="text-foreground">مسارك</strong> هي منصة سعودية متخصصة في جمع وعرض أحدث الفرص الوظيفية في المملكة العربية السعودية، تشمل الوظائف الحكومية والعسكرية ووظائف القطاع الخاص وبرامج التدريب.
           </p>
           <p>
             نهدف إلى تسهيل عملية البحث عن العمل من خلال توفير منصة شاملة وسهلة الاستخدام تجمع الوظائف من مصادر متعددة وموثوقة في مكان واحد.

@@ -1,12 +1,27 @@
 import { Link } from 'react-router-dom';
-import { categories } from '@/data/mockJobs';
+import { useCategories, useJobCounts } from '@/hooks/useJobs';
+import { categories as defaultCategories } from '@/data/mockJobs';
+
+const iconMap: Record<string, string> = {
+  'حكومية': '🏛️',
+  'عسكرية': '⭐',
+  'شركات': '🏢',
+  'تدريب': '🎓',
+};
 
 const CategoryGrid = () => {
+  const { data: dbCategories } = useCategories();
+  const { data: counts } = useJobCounts();
+
+  const cats = dbCategories && dbCategories.length > 0
+    ? dbCategories.map((c) => ({ label: c.name, icon: c.icon || iconMap[c.name] || '📋', count: counts?.[c.name] || 0 }))
+    : defaultCategories;
+
   return (
     <section className="container py-12">
       <h2 className="text-2xl font-bold text-foreground mb-6">تصفح حسب التصنيف</h2>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {categories.map((cat) => (
+        {cats.map((cat) => (
           <Link
             key={cat.label}
             to={`/jobs?category=${encodeURIComponent(cat.label)}`}

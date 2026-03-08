@@ -2,11 +2,16 @@ import { Link } from 'react-router-dom';
 import { MapPin } from 'lucide-react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import SEOHead from '@/components/SEOHead';
 import { cities, mockJobs } from '@/data/mockJobs';
 
 const Cities = () => {
   return (
     <div className="min-h-screen flex flex-col">
+      <SEOHead
+        title="الوظائف حسب المدينة"
+        description="تصفح الوظائف المتاحة في مدن السعودية: الرياض، جدة، الدمام، مكة، المدينة والمزيد"
+      />
       <Header />
 
       <div className="container py-8">

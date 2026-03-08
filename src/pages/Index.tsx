@@ -3,13 +3,13 @@ import Footer from '@/components/Footer';
 import HeroSection from '@/components/HeroSection';
 import CategoryGrid from '@/components/CategoryGrid';
 import JobCard from '@/components/JobCard';
+import SEOHead from '@/components/SEOHead';
 import { useJobs } from '@/hooks/useJobs';
 import { mockJobs } from '@/data/mockJobs';
 
 const Index = () => {
   const { data: dbJobs, isLoading } = useJobs();
 
-  // Use DB jobs if available, otherwise fall back to mock data
   const jobs = dbJobs && dbJobs.length > 0
     ? dbJobs.map((j) => ({
         id: j.id,
@@ -27,6 +27,23 @@ const Index = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <SEOHead
+        title="أحدث الوظائف في السعودية"
+        description="منصة وظيفتك لعرض أحدث الوظائف الحكومية والعسكرية ووظائف القطاع الخاص وبرامج التدريب في المملكة العربية السعودية"
+        canonical="https://jobconnect-ksa.lovable.app/"
+        jsonLd={{
+          '@context': 'https://schema.org',
+          '@type': 'WebSite',
+          name: 'وظيفتك',
+          url: 'https://jobconnect-ksa.lovable.app',
+          description: 'منصة وظيفتك لعرض أحدث الوظائف في المملكة العربية السعودية',
+          potentialAction: {
+            '@type': 'SearchAction',
+            target: 'https://jobconnect-ksa.lovable.app/search?q={search_term_string}',
+            'query-input': 'required name=search_term_string',
+          },
+        }}
+      />
       <Header />
       <HeroSection />
       <CategoryGrid />

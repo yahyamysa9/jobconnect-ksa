@@ -1,11 +1,16 @@
 import { Link } from 'react-router-dom';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import SEOHead from '@/components/SEOHead';
 import { categories } from '@/data/mockJobs';
 
 const Categories = () => {
   return (
     <div className="min-h-screen flex flex-col">
+      <SEOHead
+        title="تصنيفات الوظائف"
+        description="تصفح الوظائف حسب التصنيف: إدارية، تقنية، هندسية، طبية، تعليمية والمزيد من الوظائف في السعودية"
+      />
       <Header />
 
       <div className="container py-8">

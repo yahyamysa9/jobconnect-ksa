@@ -2,6 +2,7 @@ import { useParams, Link } from 'react-router-dom';
 import { ArrowRight, MapPin, Calendar, Building2, ExternalLink, Share2 } from 'lucide-react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import SEOHead from '@/components/SEOHead';
 import { useJob } from '@/hooks/useJobs';
 import { mockJobs } from '@/data/mockJobs';
 
@@ -9,7 +10,6 @@ const JobDetail = () => {
   const { id } = useParams();
   const { data: dbJob, isLoading } = useJob(id || '');
 
-  // Fallback to mock
   const mockJob = mockJobs.find((j) => j.id === id);
   const job = dbJob
     ? { id: dbJob.id, title: dbJob.title, company: dbJob.company_name, city: dbJob.city, category: dbJob.category, description: dbJob.description || '', requirements: dbJob.requirements || [], applyLink: dbJob.apply_link || '', publishDate: dbJob.publish_date, source: dbJob.source || '' }
@@ -28,6 +28,7 @@ const JobDetail = () => {
   if (!job) {
     return (
       <div className="min-h-screen flex flex-col">
+        <SEOHead title="الوظيفة غير موجودة" description="الوظيفة المطلوبة غير موجودة أو تم حذفها" />
         <Header />
         <div className="flex-1 flex items-center justify-center"><p className="text-muted-foreground">الوظيفة غير موجودة</p></div>
         <Footer />
@@ -43,8 +44,36 @@ const JobDetail = () => {
     }
   };
 
+  const jobJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'JobPosting',
+    title: job.title,
+    description: job.description || job.title,
+    datePosted: job.publishDate,
+    hiringOrganization: {
+      '@type': 'Organization',
+      name: job.company,
+    },
+    jobLocation: {
+      '@type': 'Place',
+      address: {
+        '@type': 'PostalAddress',
+        addressLocality: job.city,
+        addressCountry: 'SA',
+      },
+    },
+    employmentType: 'FULL_TIME',
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
+      <SEOHead
+        title={`${job.title} - ${job.company}`}
+        description={`وظيفة ${job.title} في شركة ${job.company} بمدينة ${job.city}. ${job.description?.slice(0, 120) || 'قدّم الآن'}`}
+        canonical={`https://jobconnect-ksa.lovable.app/jobs/${job.id}`}
+        type="article"
+        jsonLd={jobJsonLd}
+      />
       <Header />
       <div className="container py-8">
         <Link to="/jobs" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors">

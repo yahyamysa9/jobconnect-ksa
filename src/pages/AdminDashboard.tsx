@@ -65,6 +65,7 @@ const AdminDashboard = () => {
       fetchJobs();
       fetchCategories();
       fetchCities();
+      fetchMessages();
     }
   }, [isAdmin]);
 

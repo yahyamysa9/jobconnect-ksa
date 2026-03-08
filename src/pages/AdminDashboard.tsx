@@ -154,10 +154,6 @@ const AdminDashboard = () => {
   if (loading) return <div className="min-h-screen flex items-center justify-center text-muted-foreground">جاري التحميل...</div>;
   if (!isAdmin) return null;
 
-  // Scrape state
-  const [scraping, setScraping] = useState(false);
-  const [scrapeResult, setScrapeResult] = useState<{ message: string; imported?: number; skipped?: number } | null>(null);
-
   const handleScrapeJobs = async () => {
     setScraping(true);
     setScrapeResult(null);

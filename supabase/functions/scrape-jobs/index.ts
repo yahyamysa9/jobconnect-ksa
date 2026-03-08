@@ -139,119 +139,119 @@ Deno.serve(async (req) => {
     let imported = 0;
     let skipped = 0;
 
+    // Filter out duplicates first
+    const newJobs: ScrapedJob[] = [];
     for (const job of scrapedJobs) {
-      // Check for duplicates by source_url
       const { data: existing } = await supabase
         .from('jobs')
         .select('id')
         .eq('source_url', job.source_url)
         .maybeSingle();
+      if (existing) { skipped++; continue; }
 
-      if (existing) {
-        skipped++;
-        continue;
-      }
-
-      // Also check by title + company
       const { data: existing2 } = await supabase
         .from('jobs')
         .select('id')
         .eq('title', job.title)
         .eq('company_name', job.company_name)
         .maybeSingle();
+      if (existing2) { skipped++; continue; }
+      newJobs.push(job);
+    }
 
-      if (existing2) {
-        skipped++;
-        continue;
-      }
+    console.log(`${newJobs.length} new jobs to process, ${skipped} skipped`);
 
-      // Try to get actual apply link from individual job page
-      let actualApplyLink = '';
-      try {
-        const jobPageResponse = await fetch('https://api.firecrawl.dev/v1/scrape', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${firecrawlApiKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            url: job.source_url,
-            formats: ['markdown', 'links'],
-            onlyMainContent: true,
-            waitFor: 3000,
-          }),
-        });
+    // Fetch apply links in parallel (batches of 5)
+    const batchSize = 5;
+    for (let b = 0; b < newJobs.length; b += batchSize) {
+      const batch = newJobs.slice(b, b + batchSize);
+      const results = await Promise.allSettled(batch.map(async (job) => {
+        let actualApplyLink = '';
+        try {
+          const jobPageResponse = await fetch('https://api.firecrawl.dev/v1/scrape', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${firecrawlApiKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              url: job.source_url,
+              formats: ['markdown', 'links'],
+              onlyMainContent: true,
+              waitFor: 2000,
+            }),
+          });
 
-        if (jobPageResponse.ok) {
-          const jobPageData = await jobPageResponse.json();
-          const jobMarkdown = jobPageData.data?.markdown || jobPageData.markdown || '';
-          const pageLinks: string[] = jobPageData.data?.links || [];
-          
-          // 1. Look for explicit apply links in markdown
-          const applyPatterns = [
-            /\[(?:رابط التقديم|التقديم|قدم الآن|سجل الآن|للتقديم|اضغط هنا للتقديم|Apply|تقديم)[^\]]*\]\(([^)]+)\)/gi,
-            /\[(?:[^\]]*تقديم[^\]]*|[^\]]*التسجيل[^\]]*)\]\(([^)]+)\)/gi,
-          ];
-          
-          for (const pattern of applyPatterns) {
-            const matches = [...jobMarkdown.matchAll(pattern)];
-            for (const match of matches) {
-              if (!match[1].includes('ewdifh.com')) {
-                actualApplyLink = match[1];
-                break;
+          if (jobPageResponse.ok) {
+            const jobPageData = await jobPageResponse.json();
+            const jobMarkdown = jobPageData.data?.markdown || jobPageData.markdown || '';
+            const pageLinks: string[] = jobPageData.data?.links || [];
+            
+            const applyPatterns = [
+              /\[(?:رابط التقديم|التقديم|قدم الآن|سجل الآن|للتقديم|اضغط هنا للتقديم|Apply|تقديم)[^\]]*\]\(([^)]+)\)/gi,
+              /\[(?:[^\]]*تقديم[^\]]*|[^\]]*التسجيل[^\]]*)\]\(([^)]+)\)/gi,
+            ];
+            
+            for (const pattern of applyPatterns) {
+              const matches = [...jobMarkdown.matchAll(pattern)];
+              for (const match of matches) {
+                if (!match[1].includes('ewdifh.com')) {
+                  actualApplyLink = match[1];
+                  break;
+                }
+              }
+              if (actualApplyLink) break;
+            }
+
+            if (!actualApplyLink && pageLinks.length > 0) {
+              const externalLinks = pageLinks.filter((l: string) => 
+                !l.includes('ewdifh.com') && 
+                !l.includes('twitter.com') && 
+                !l.includes('facebook.com') && 
+                !l.includes('linkedin.com') &&
+                !l.includes('whatsapp.com') &&
+                !l.includes('t.me') &&
+                l.startsWith('http')
+              );
+              if (externalLinks.length > 0) {
+                actualApplyLink = externalLinks[externalLinks.length - 1];
               }
             }
-            if (actualApplyLink) break;
-          }
 
-          // 2. Check extracted links for external apply URLs
-          if (!actualApplyLink && pageLinks.length > 0) {
-            const externalLinks = pageLinks.filter((l: string) => 
-              !l.includes('ewdifh.com') && 
-              !l.includes('twitter.com') && 
-              !l.includes('facebook.com') && 
-              !l.includes('linkedin.com') &&
-              !l.includes('whatsapp.com') &&
-              !l.includes('t.me') &&
-              l.startsWith('http')
-            );
-            if (externalLinks.length > 0) {
-              actualApplyLink = externalLinks[externalLinks.length - 1];
+            if (!actualApplyLink) {
+              const externalLinks = [...jobMarkdown.matchAll(/\[([^\]]+)\]\((https?:\/\/(?!(?:www\.)?ewdifh\.com|twitter\.com|facebook\.com|linkedin\.com|whatsapp\.com|t\.me)[^)]+)\)/g)];
+              if (externalLinks.length > 0) {
+                actualApplyLink = externalLinks[externalLinks.length - 1][2];
+              }
             }
           }
-
-          // 3. Fallback: find any external link in markdown
-          if (!actualApplyLink) {
-            const externalLinks = [...jobMarkdown.matchAll(/\[([^\]]+)\]\((https?:\/\/(?!(?:www\.)?ewdifh\.com|twitter\.com|facebook\.com|linkedin\.com|whatsapp\.com|t\.me)[^)]+)\)/g)];
-            if (externalLinks.length > 0) {
-              actualApplyLink = externalLinks[externalLinks.length - 1][2];
-            }
-          }
+        } catch (e) {
+          console.log('Could not fetch job detail page:', e);
         }
-      } catch (e) {
-        console.log('Could not fetch job detail page:', e);
-      }
 
-      // If no external link found, leave empty rather than linking to ewdifh
-      console.log('Job:', job.title, '| Apply link:', actualApplyLink || '(none found)');
+        console.log('Job:', job.title, '| Apply link:', actualApplyLink || '(none found)');
 
-      const { error: insertError } = await supabase.from('jobs').insert({
-        title: job.title,
-        company_name: job.company_name,
-        city: job.city,
-        category: job.category,
-        description: job.description,
-        apply_link: actualApplyLink,
-        source: 'أي وظيفة',
-        source_url: job.source_url,
-        publish_date: new Date().toISOString().split('T')[0],
-      });
+        const { error: insertError } = await supabase.from('jobs').insert({
+          title: job.title,
+          company_name: job.company_name,
+          city: job.city,
+          category: job.category,
+          description: job.description,
+          apply_link: actualApplyLink,
+          source: 'أي وظيفة',
+          source_url: job.source_url,
+          publish_date: new Date().toISOString().split('T')[0],
+        });
 
-      if (insertError) {
-        console.error('Insert error:', job.title, insertError.message);
-      } else {
-        imported++;
-        console.log('Imported:', job.title, '| Apply link:', actualApplyLink);
+        if (insertError) {
+          console.error('Insert error:', job.title, insertError.message);
+          return false;
+        }
+        return true;
+      }));
+
+      for (const r of results) {
+        if (r.status === 'fulfilled' && r.value) imported++;
       }
     }
 

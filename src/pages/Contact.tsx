@@ -38,17 +38,23 @@ const Contact = () => {
     }
 
     setSending(true);
-    const { error: dbError } = await supabase.from('contact_messages').insert([{
-      name: result.data.name,
-      email: result.data.email,
-      subject: result.data.subject,
-      message: result.data.message,
-    }]).select().maybeSingle();
-    if (dbError) {
+    try {
+      const { error: dbError } = await supabase.from('contact_messages').insert([{
+        name: result.data.name,
+        email: result.data.email,
+        subject: result.data.subject,
+        message: result.data.message,
+      }]);
+      if (dbError) {
+        console.error('Contact form error:', dbError);
+        toast.error('حدث خطأ أثناء إرسال الرسالة. حاول مرة أخرى.');
+      } else {
+        toast.success('تم إرسال رسالتك بنجاح! سنتواصل معك قريباً.');
+        setForm({ name: '', email: '', subject: '', message: '' });
+      }
+    } catch (err) {
+      console.error('Contact form exception:', err);
       toast.error('حدث خطأ أثناء إرسال الرسالة. حاول مرة أخرى.');
-    } else {
-      toast.success('تم إرسال رسالتك بنجاح! سنتواصل معك قريباً.');
-      setForm({ name: '', email: '', subject: '', message: '' });
     }
     setSending(false);
   };

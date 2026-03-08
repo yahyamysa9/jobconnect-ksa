@@ -165,13 +165,51 @@ Deno.serve(async (req) => {
         continue;
       }
 
+      // Try to get actual apply link from individual job page
+      let actualApplyLink = job.apply_link;
+      try {
+        const jobPageResponse = await fetch('https://api.firecrawl.dev/v1/scrape', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${firecrawlApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            url: job.source_url,
+            formats: ['markdown'],
+            onlyMainContent: true,
+            waitFor: 3000,
+          }),
+        });
+
+        if (jobPageResponse.ok) {
+          const jobPageData = await jobPageResponse.json();
+          const jobMarkdown = jobPageData.data?.markdown || jobPageData.markdown || '';
+          
+          // Look for apply/registration links
+          const applyLinkMatch = jobMarkdown.match(/\[(?:رابط التقديم|التقديم|قدم الآن|سجل الآن|Apply|للتقديم)[^\]]*\]\(([^)]+)\)/i);
+          if (applyLinkMatch && !applyLinkMatch[1].includes('ewdifh.com')) {
+            actualApplyLink = applyLinkMatch[1];
+          } else {
+            // Try to find any external link that looks like an apply link
+            const externalLinks = [...jobMarkdown.matchAll(/\[([^\]]+)\]\((https?:\/\/(?!www\.ewdifh\.com)[^)]+)\)/g)];
+            if (externalLinks.length > 0) {
+              // Use the last external link (usually the apply button)
+              actualApplyLink = externalLinks[externalLinks.length - 1][2];
+            }
+          }
+        }
+      } catch (e) {
+        console.log('Could not fetch job detail page, using listing link:', e);
+      }
+
       const { error: insertError } = await supabase.from('jobs').insert({
         title: job.title,
         company_name: job.company_name,
         city: job.city,
         category: job.category,
         description: job.description,
-        apply_link: job.apply_link,
+        apply_link: actualApplyLink,
         source: 'أي وظيفة',
         source_url: job.source_url,
         publish_date: new Date().toISOString().split('T')[0],
@@ -181,7 +219,7 @@ Deno.serve(async (req) => {
         console.error('Insert error:', job.title, insertError.message);
       } else {
         imported++;
-        console.log('Imported:', job.title);
+        console.log('Imported:', job.title, '| Apply link:', actualApplyLink);
       }
     }
 

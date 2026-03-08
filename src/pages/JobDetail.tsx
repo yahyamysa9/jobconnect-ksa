@@ -121,10 +121,12 @@ const JobDetail = () => {
             </div>
           )}
 
-          {job.applyLink && (
+          {job.applyLink ? (
             <a href={job.applyLink} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-6 py-3 rounded-lg hero-gradient text-primary-foreground font-bold text-sm hover:opacity-90 transition-opacity">
               <ExternalLink className="w-4 h-4" /> التقديم على الوظيفة
             </a>
+          ) : (
+            <p className="text-sm text-muted-foreground">لا يوجد رابط تقديم متاح حالياً</p>
           )}
         </div>
       </div>

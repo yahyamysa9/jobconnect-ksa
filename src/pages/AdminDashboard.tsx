@@ -305,6 +305,38 @@ const AdminDashboard = () => {
             </div>
           </div>
         )}
+
+        {/* Import Tab */}
+        {activeTab === 'import' && (
+          <div>
+            <h2 className="text-lg font-bold text-foreground mb-4">جلب الوظائف تلقائياً</h2>
+            <div className="bg-card rounded-xl border border-border p-6 card-shadow">
+              <p className="text-sm text-muted-foreground mb-4">
+                جلب أحدث الوظائف من موقع "أي وظيفة" (ewdifh.com) تلقائياً. النظام يتحقق من عدم تكرار الوظائف قبل الإضافة.
+              </p>
+              <button
+                onClick={handleScrapeJobs}
+                disabled={scraping}
+                className="flex items-center gap-2 px-6 py-3 rounded-lg hero-gradient text-primary-foreground font-bold text-sm hover:opacity-90 transition-opacity disabled:opacity-50"
+              >
+                {scraping ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                {scraping ? 'جاري الجلب...' : 'جلب الوظائف الآن'}
+              </button>
+
+              {scrapeResult && (
+                <div className="mt-4 p-4 rounded-lg bg-muted">
+                  <p className="text-sm font-medium text-foreground">{scrapeResult.message}</p>
+                  {scrapeResult.imported !== undefined && (
+                    <div className="flex gap-4 mt-2 text-xs text-muted-foreground">
+                      <span>✅ تم جلب: {scrapeResult.imported}</span>
+                      <span>⏭️ مكررة: {scrapeResult.skipped}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -38,6 +38,8 @@ const AdminDashboard = () => {
   // Category/City form
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newCityName, setNewCityName] = useState('');
+  const [scraping, setScraping] = useState(false);
+  const [scrapeResult, setScrapeResult] = useState<{ message: string; imported?: number; skipped?: number } | null>(null);
 
   useEffect(() => {
     if (!loading && (!user || !isAdmin)) {

@@ -1,6 +1,6 @@
 import { useState, useEffect, createContext, useContext, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import type { User } from '@supabase/supabase-js';
+import type { Session, User } from '@supabase/supabase-js';
 
 interface AuthContextType {
   user: User | null;
@@ -32,58 +32,57 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       .eq('user_id', userId)
       .eq('role', 'admin')
       .maybeSingle();
+
     const admin = !!data;
     setIsAdmin(admin);
     return admin;
   }, []);
 
+  const syncFromSession = useCallback((session: Session | null) => {
+    const currentUser = session?.user ?? null;
+    setUser(currentUser);
+
+    if (!currentUser) {
+      setIsAdmin(false);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    void checkAdmin(currentUser.id)
+      .catch(() => setIsAdmin(false))
+      .finally(() => setLoading(false));
+  }, [checkAdmin]);
+
   useEffect(() => {
     let mounted = true;
 
-    // First restore session from storage
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
       if (!mounted) return;
-      const currentUser = session?.user ?? null;
-      setUser(currentUser);
-      if (currentUser) {
-        await checkAdmin(currentUser.id);
-      }
-      if (mounted) setLoading(false);
+      syncFromSession(session);
     });
 
-    // Then listen for subsequent auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (!mounted) return;
-        // Skip INITIAL_SESSION as getSession handles it
-        if (event === 'INITIAL_SESSION') return;
-        
-        const currentUser = session?.user ?? null;
-        setUser(currentUser);
-        if (currentUser) {
-          await checkAdmin(currentUser.id);
-        } else {
-          setIsAdmin(false);
-        }
-        if (mounted) setLoading(false);
-      }
-    );
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!mounted) return;
+      if (event === 'INITIAL_SESSION') return;
+      syncFromSession(session);
+    });
 
     return () => {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, [checkAdmin]);
+  }, [syncFromSession]);
 
   const signIn = async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) return { error: error.message };
-    
-    // Wait for admin check to complete before returning
-    if (data.user) {
-      setUser(data.user);
-      await checkAdmin(data.user.id);
+    setLoading(true);
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+
+    if (error) {
+      setLoading(false);
+      return { error: error.message };
     }
+
     return { error: null };
   };
 
@@ -91,6 +90,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     await supabase.auth.signOut();
     setUser(null);
     setIsAdmin(false);
+    setLoading(false);
   };
 
   return (

@@ -1,6 +1,7 @@
 import { Search, Menu, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useState } from 'react';
+import NotificationBell from './NotificationBell';
 
 const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);

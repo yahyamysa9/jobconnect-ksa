@@ -2,8 +2,10 @@ import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { Plus, Pencil, Trash2, LogOut, LayoutDashboard, Briefcase, Tag, MapPin, Download, Loader2, BarChart3, MessageSquare, Eye, EyeOff } from 'lucide-react';
+import { Plus, Pencil, Trash2, LogOut, LayoutDashboard, Briefcase, Tag, MapPin, Download, Loader2, BarChart3, MessageSquare, Eye, EyeOff, Clock, CheckCircle2, AlertCircle, RefreshCw, Home } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { formatDistanceToNow } from 'date-fns';
+import { ar } from 'date-fns/locale';
 
 type Tab = 'stats' | 'jobs' | 'categories' | 'cities' | 'import' | 'messages';
 
@@ -25,6 +27,8 @@ interface JobRow {
   category: string;
   is_active: boolean;
   publish_date: string;
+  created_at?: string;
+  source?: string;
 }
 
 const AdminDashboard = () => {
@@ -37,7 +41,6 @@ const AdminDashboard = () => {
   const [showJobForm, setShowJobForm] = useState(false);
   const [editingJob, setEditingJob] = useState<JobRow | null>(null);
 
-  // Job form state
   const [jobTitle, setJobTitle] = useState('');
   const [jobCompany, setJobCompany] = useState('');
   const [jobCity, setJobCity] = useState('');
@@ -46,7 +49,6 @@ const AdminDashboard = () => {
   const [jobRequirements, setJobRequirements] = useState('');
   const [jobApplyLink, setJobApplyLink] = useState('');
 
-  // Category/City form
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newCityName, setNewCityName] = useState('');
   const [scraping, setScraping] = useState(false);
@@ -72,8 +74,8 @@ const AdminDashboard = () => {
   const fetchJobs = async () => {
     const { data } = await supabase
       .from('jobs')
-      .select('id, title, company_name, city, category, is_active, publish_date')
-      .order('publish_date', { ascending: false });
+      .select('id, title, company_name, city, category, is_active, publish_date, created_at, source')
+      .order('created_at', { ascending: false });
     setJobs(data || []);
   };
 
@@ -122,7 +124,6 @@ const AdminDashboard = () => {
       requirements: jobRequirements.split('\n').filter(Boolean),
       apply_link: jobApplyLink,
     };
-
     if (editingJob) {
       await supabase.from('jobs').update(jobData).eq('id', editingJob.id);
     } else {
@@ -183,26 +184,6 @@ const AdminDashboard = () => {
     fetchCities();
   };
 
-  const COLORS = ['hsl(var(--primary))', 'hsl(var(--accent))', 'hsl(210, 70%, 55%)', 'hsl(150, 60%, 45%)', 'hsl(30, 80%, 55%)', 'hsl(340, 70%, 55%)', 'hsl(270, 60%, 55%)', 'hsl(190, 70%, 45%)'];
-
-  const statsByCategory = useMemo(() => {
-    const counts: Record<string, number> = {};
-    jobs.forEach(j => { counts[j.category] = (counts[j.category] || 0) + 1; });
-    return Object.entries(counts).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
-  }, [jobs]);
-
-  const statsByCity = useMemo(() => {
-    const counts: Record<string, number> = {};
-    jobs.forEach(j => { counts[j.city] = (counts[j.city] || 0) + 1; });
-    return Object.entries(counts).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
-  }, [jobs]);
-
-  const activeJobs = jobs.filter(j => j.is_active).length;
-  const inactiveJobs = jobs.length - activeJobs;
-
-  if (loading) return <div className="min-h-screen flex items-center justify-center text-muted-foreground">جاري التحميل...</div>;
-  if (!isAdmin) return null;
-
   const handleScrapeJobs = async () => {
     setScraping(true);
     setScrapeResult(null);
@@ -220,7 +201,41 @@ const AdminDashboard = () => {
     setScraping(false);
   };
 
+  const COLORS = ['hsl(var(--primary))', 'hsl(var(--accent))', 'hsl(210, 70%, 55%)', 'hsl(150, 60%, 45%)', 'hsl(30, 80%, 55%)', 'hsl(340, 70%, 55%)', 'hsl(270, 60%, 55%)', 'hsl(190, 70%, 45%)'];
+
+  const statsByCategory = useMemo(() => {
+    const counts: Record<string, number> = {};
+    jobs.forEach(j => { counts[j.category] = (counts[j.category] || 0) + 1; });
+    return Object.entries(counts).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
+  }, [jobs]);
+
+  const statsByCity = useMemo(() => {
+    const counts: Record<string, number> = {};
+    jobs.forEach(j => { counts[j.city] = (counts[j.city] || 0) + 1; });
+    return Object.entries(counts).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
+  }, [jobs]);
+
+  const activeJobs = jobs.filter(j => j.is_active).length;
+  const inactiveJobs = jobs.length - activeJobs;
   const unreadCount = messages.filter(m => !m.is_read).length;
+
+  // Last imported job info
+  const lastImportedJob = useMemo(() => {
+    return jobs.find(j => j.source === 'أي وظيفة');
+  }, [jobs]);
+
+  const lastImportTime = lastImportedJob?.created_at
+    ? formatDistanceToNow(new Date(lastImportedJob.created_at), { addSuffix: true, locale: ar })
+    : null;
+
+  // Jobs added today
+  const todayJobsCount = useMemo(() => {
+    const today = new Date().toISOString().split('T')[0];
+    return jobs.filter(j => j.created_at?.startsWith(today)).length;
+  }, [jobs]);
+
+  if (loading) return <div className="min-h-screen flex items-center justify-center text-muted-foreground">جاري التحميل...</div>;
+  if (!isAdmin) return null;
 
   const tabs: { key: Tab; label: string; icon: React.ReactNode; badge?: number }[] = [
     { key: 'stats', label: 'الإحصائيات', icon: <BarChart3 className="w-4 h-4" /> },
@@ -234,27 +249,86 @@ const AdminDashboard = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Admin Header */}
-      <header className="bg-card border-b border-border sticky top-0 z-50">
+      <header className="bg-card border-b border-border sticky top-0 z-50 shadow-sm">
         <div className="container flex items-center justify-between h-14">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <LayoutDashboard className="w-5 h-5 text-primary" />
-            <span className="font-bold text-foreground">لوحة التحكم</span>
+            <span className="font-bold text-foreground text-lg">لوحة التحكم</span>
           </div>
-          <button onClick={() => { signOut(); navigate('/'); }} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
-            <LogOut className="w-4 h-4" /> خروج
-          </button>
+          <div className="flex items-center gap-3">
+            <button onClick={() => navigate('/')} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
+              <Home className="w-4 h-4" /> الموقع
+            </button>
+            <button onClick={() => { signOut(); navigate('/'); }} className="flex items-center gap-1 text-sm text-destructive hover:text-destructive/80 transition-colors">
+              <LogOut className="w-4 h-4" /> خروج
+            </button>
+          </div>
         </div>
       </header>
 
       <div className="container py-6">
+        {/* Last Import Notification Banner */}
+        <div className="mb-6 bg-card rounded-xl border border-border p-4 card-shadow flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center shrink-0">
+              <CheckCircle2 className="w-5 h-5 text-accent" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-foreground">آخر جلب تلقائي</p>
+              {lastImportedJob ? (
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  <Clock className="w-3 h-3 inline-block ml-1" />
+                  {lastImportTime} — "{lastImportedJob.title?.substring(0, 60)}..."
+                </p>
+              ) : (
+                <p className="text-xs text-muted-foreground mt-0.5">لم يتم جلب أي وظائف بعد</p>
+              )}
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs bg-accent/10 text-accent-foreground px-3 py-1 rounded-full font-medium">
+              +{todayJobsCount} اليوم
+            </span>
+            <button
+              onClick={handleScrapeJobs}
+              disabled={scraping}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+            >
+              {scraping ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+              {scraping ? 'جاري الجلب...' : 'جلب الآن'}
+            </button>
+          </div>
+        </div>
+
+        {scrapeResult && (
+          <div className="mb-6 p-4 rounded-xl border bg-card card-shadow">
+            <div className="flex items-center gap-2">
+              {scrapeResult.imported !== undefined && scrapeResult.imported > 0 ? (
+                <CheckCircle2 className="w-5 h-5 text-accent shrink-0" />
+              ) : (
+                <AlertCircle className="w-5 h-5 text-muted-foreground shrink-0" />
+              )}
+              <p className="text-sm font-medium text-foreground">{scrapeResult.message}</p>
+            </div>
+            {scrapeResult.imported !== undefined && (
+              <div className="flex gap-4 mt-2 text-xs text-muted-foreground mr-7">
+                <span>✅ تم جلب: {scrapeResult.imported}</span>
+                <span>⏭️ مكررة: {scrapeResult.skipped}</span>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Tabs */}
-        <div className="flex gap-2 mb-6 overflow-x-auto">
+        <div className="flex gap-2 mb-6 overflow-x-auto pb-1">
           {tabs.map((tab) => (
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
-                activeTab === tab.key ? 'hero-gradient text-primary-foreground' : 'bg-card border border-border text-muted-foreground hover:text-foreground'
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all whitespace-nowrap ${
+                activeTab === tab.key
+                  ? 'hero-gradient text-primary-foreground shadow-md'
+                  : 'bg-card border border-border text-muted-foreground hover:text-foreground hover:border-primary/30'
               }`}
             >
               {tab.icon} {tab.label}
@@ -266,45 +340,53 @@ const AdminDashboard = () => {
         {/* Stats Tab */}
         {activeTab === 'stats' && (
           <div className="space-y-6">
-            {/* Summary Cards */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="bg-card rounded-xl border border-border p-5 card-shadow text-center">
+              <div className="bg-card rounded-xl border border-border p-5 card-shadow text-center hover:shadow-lg transition-shadow">
                 <p className="text-3xl font-bold text-primary">{jobs.length}</p>
                 <p className="text-sm text-muted-foreground mt-1">إجمالي الوظائف</p>
               </div>
-              <div className="bg-card rounded-xl border border-border p-5 card-shadow text-center">
-                <p className="text-3xl font-bold text-accent-foreground">{activeJobs}</p>
+              <div className="bg-card rounded-xl border border-border p-5 card-shadow text-center hover:shadow-lg transition-shadow">
+                <p className="text-3xl font-bold text-accent">{activeJobs}</p>
                 <p className="text-sm text-muted-foreground mt-1">وظائف نشطة</p>
               </div>
-              <div className="bg-card rounded-xl border border-border p-5 card-shadow text-center">
+              <div className="bg-card rounded-xl border border-border p-5 card-shadow text-center hover:shadow-lg transition-shadow">
                 <p className="text-3xl font-bold text-muted-foreground">{inactiveJobs}</p>
                 <p className="text-sm text-muted-foreground mt-1">وظائف متوقفة</p>
               </div>
-              <div className="bg-card rounded-xl border border-border p-5 card-shadow text-center">
-                <p className="text-3xl font-bold text-foreground">{statsByCity.length}</p>
+              <div className="bg-card rounded-xl border border-border p-5 card-shadow text-center hover:shadow-lg transition-shadow">
+                <p className="text-3xl font-bold text-secondary-foreground">{statsByCity.length}</p>
                 <p className="text-sm text-muted-foreground mt-1">مدن</p>
               </div>
             </div>
 
-            {/* Charts Row */}
+            {/* Recent Activity */}
+            <div className="bg-card rounded-xl border border-border p-6 card-shadow">
+              <h3 className="font-bold text-foreground mb-4 flex items-center gap-2">
+                <Clock className="w-4 h-4 text-primary" />
+                آخر الوظائف المضافة
+              </h3>
+              <div className="space-y-3">
+                {jobs.slice(0, 5).map((job) => (
+                  <div key={job.id} className="flex items-center justify-between gap-3 py-2 border-b border-border last:border-0">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-foreground truncate">{job.title}</p>
+                      <p className="text-xs text-muted-foreground">{job.company_name} • {job.source || 'يدوي'}</p>
+                    </div>
+                    <span className="text-xs text-muted-foreground whitespace-nowrap">
+                      {job.created_at ? formatDistanceToNow(new Date(job.created_at), { addSuffix: true, locale: ar }) : job.publish_date}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Category Pie Chart */}
               <div className="bg-card rounded-xl border border-border p-6 card-shadow">
                 <h3 className="font-bold text-foreground mb-4">الوظائف حسب التصنيف</h3>
                 <div className="h-64">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
-                      <Pie
-                        data={statsByCategory}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={50}
-                        outerRadius={90}
-                        dataKey="value"
-                        nameKey="name"
-                        label={({ name, value }) => `${name} (${value})`}
-                        labelLine={false}
-                      >
+                      <Pie data={statsByCategory} cx="50%" cy="50%" innerRadius={50} outerRadius={90} dataKey="value" nameKey="name" label={({ name, value }) => `${name} (${value})`} labelLine={false}>
                         {statsByCategory.map((_, index) => (
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
@@ -315,7 +397,6 @@ const AdminDashboard = () => {
                 </div>
               </div>
 
-              {/* City Bar Chart */}
               <div className="bg-card rounded-xl border border-border p-6 card-shadow">
                 <h3 className="font-bold text-foreground mb-4">الوظائف حسب المدينة</h3>
                 <div className="h-64">
@@ -341,7 +422,7 @@ const AdminDashboard = () => {
               <h2 className="text-lg font-bold text-foreground">إدارة الوظائف ({jobs.length})</h2>
               <button
                 onClick={() => { resetJobForm(); setShowJobForm(true); }}
-                className="flex items-center gap-1 px-4 py-2 rounded-lg hero-gradient text-primary-foreground text-sm font-medium"
+                className="flex items-center gap-1 px-4 py-2 rounded-xl hero-gradient text-primary-foreground text-sm font-medium shadow-md"
               >
                 <Plus className="w-4 h-4" /> إضافة وظيفة
               </button>
@@ -374,17 +455,20 @@ const AdminDashboard = () => {
 
             <div className="space-y-3">
               {jobs.map((job) => (
-                <div key={job.id} className="bg-card rounded-lg border border-border p-4 flex items-center justify-between gap-4">
+                <div key={job.id} className="bg-card rounded-xl border border-border p-4 flex items-center justify-between gap-4 hover:shadow-md transition-shadow">
                   <div className="min-w-0">
                     <h3 className="font-medium text-foreground text-sm truncate">{job.title}</h3>
-                    <p className="text-xs text-muted-foreground">{job.company_name} • {job.city} • {job.category}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {job.company_name} • {job.city} • {job.category}
+                      {job.source && <span className="text-primary"> • {job.source}</span>}
+                    </p>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    <button onClick={() => handleToggleJob(job.id, job.is_active)} className={`px-2 py-1 rounded text-xs font-medium ${job.is_active ? 'bg-accent/20 text-accent-foreground' : 'bg-muted text-muted-foreground'}`}>
-                      {job.is_active ? 'نشط' : 'متوقف'}
+                    <button onClick={() => handleToggleJob(job.id, job.is_active)} className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${job.is_active ? 'bg-accent/15 text-accent' : 'bg-muted text-muted-foreground'}`}>
+                      {job.is_active ? '● نشط' : '○ متوقف'}
                     </button>
-                    <button onClick={() => handleEditJob(job)} className="p-1.5 rounded hover:bg-muted transition-colors"><Pencil className="w-4 h-4 text-muted-foreground" /></button>
-                    <button onClick={() => handleDeleteJob(job.id)} className="p-1.5 rounded hover:bg-destructive/10 transition-colors"><Trash2 className="w-4 h-4 text-destructive" /></button>
+                    <button onClick={() => handleEditJob(job)} className="p-1.5 rounded-lg hover:bg-muted transition-colors"><Pencil className="w-4 h-4 text-muted-foreground" /></button>
+                    <button onClick={() => handleDeleteJob(job.id)} className="p-1.5 rounded-lg hover:bg-destructive/10 transition-colors"><Trash2 className="w-4 h-4 text-destructive" /></button>
                   </div>
                 </div>
               ))}
@@ -402,24 +486,26 @@ const AdminDashboard = () => {
             ) : (
               <div className="space-y-3">
                 {messages.map((msg) => (
-                  <div key={msg.id} className={`bg-card rounded-xl border p-4 card-shadow transition-colors ${msg.is_read ? 'border-border' : 'border-primary/30 bg-primary/5'}`}>
+                  <div key={msg.id} className={`bg-card rounded-xl border p-4 card-shadow transition-all hover:shadow-md ${msg.is_read ? 'border-border' : 'border-primary/30 bg-primary/5'}`}>
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 mb-1">
-                          {!msg.is_read && <span className="w-2 h-2 rounded-full bg-primary shrink-0" />}
+                          {!msg.is_read && <span className="w-2 h-2 rounded-full bg-primary shrink-0 animate-pulse" />}
                           <h3 className="font-bold text-foreground text-sm truncate">{msg.subject}</h3>
                         </div>
                         <p className="text-xs text-muted-foreground mb-1">{msg.name} • {msg.email}</p>
-                        <p className="text-xs text-muted-foreground">{new Date(msg.created_at).toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatDistanceToNow(new Date(msg.created_at), { addSuffix: true, locale: ar })}
+                        </p>
                       </div>
                       <div className="flex items-center gap-1 shrink-0">
-                        <button onClick={() => setExpandedMessage(expandedMessage === msg.id ? null : msg.id)} className="p-1.5 rounded hover:bg-muted transition-colors" title="عرض الرسالة">
+                        <button onClick={() => setExpandedMessage(expandedMessage === msg.id ? null : msg.id)} className="p-1.5 rounded-lg hover:bg-muted transition-colors" title="عرض الرسالة">
                           <Eye className="w-4 h-4 text-muted-foreground" />
                         </button>
-                        <button onClick={() => handleToggleRead(msg.id, msg.is_read)} className="p-1.5 rounded hover:bg-muted transition-colors" title={msg.is_read ? 'تعيين كغير مقروء' : 'تعيين كمقروء'}>
+                        <button onClick={() => handleToggleRead(msg.id, msg.is_read)} className="p-1.5 rounded-lg hover:bg-muted transition-colors" title={msg.is_read ? 'تعيين كغير مقروء' : 'تعيين كمقروء'}>
                           {msg.is_read ? <EyeOff className="w-4 h-4 text-muted-foreground" /> : <Eye className="w-4 h-4 text-primary" />}
                         </button>
-                        <button onClick={() => handleDeleteMessage(msg.id)} className="p-1.5 rounded hover:bg-destructive/10 transition-colors"><Trash2 className="w-4 h-4 text-destructive" /></button>
+                        <button onClick={() => handleDeleteMessage(msg.id)} className="p-1.5 rounded-lg hover:bg-destructive/10 transition-colors"><Trash2 className="w-4 h-4 text-destructive" /></button>
                       </div>
                     </div>
                     {expandedMessage === msg.id && (
@@ -437,16 +523,16 @@ const AdminDashboard = () => {
         {/* Categories Tab */}
         {activeTab === 'categories' && (
           <div>
-            <h2 className="text-lg font-bold text-foreground mb-4">إدارة التصنيفات</h2>
+            <h2 className="text-lg font-bold text-foreground mb-4">إدارة التصنيفات ({categories.length})</h2>
             <form onSubmit={handleAddCategory} className="flex gap-2 mb-6">
               <input value={newCategoryName} onChange={(e) => setNewCategoryName(e.target.value)} placeholder="اسم التصنيف الجديد" className="flex-1 h-10 rounded-lg border border-border bg-background text-foreground px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
               <button type="submit" className="px-4 h-10 rounded-lg hero-gradient text-primary-foreground text-sm font-medium"><Plus className="w-4 h-4" /></button>
             </form>
             <div className="space-y-2">
               {categories.map((cat) => (
-                <div key={cat.id} className="bg-card rounded-lg border border-border p-3 flex items-center justify-between">
-                  <span className="text-sm text-foreground">{cat.icon} {cat.name}</span>
-                  <button onClick={() => handleDeleteCategory(cat.id)} className="p-1.5 rounded hover:bg-destructive/10 transition-colors"><Trash2 className="w-4 h-4 text-destructive" /></button>
+                <div key={cat.id} className="bg-card rounded-xl border border-border p-3.5 flex items-center justify-between hover:shadow-sm transition-shadow">
+                  <span className="text-sm text-foreground font-medium">{cat.icon} {cat.name}</span>
+                  <button onClick={() => handleDeleteCategory(cat.id)} className="p-1.5 rounded-lg hover:bg-destructive/10 transition-colors"><Trash2 className="w-4 h-4 text-destructive" /></button>
                 </div>
               ))}
             </div>
@@ -456,16 +542,16 @@ const AdminDashboard = () => {
         {/* Cities Tab */}
         {activeTab === 'cities' && (
           <div>
-            <h2 className="text-lg font-bold text-foreground mb-4">إدارة المدن</h2>
+            <h2 className="text-lg font-bold text-foreground mb-4">إدارة المدن ({cities.length})</h2>
             <form onSubmit={handleAddCity} className="flex gap-2 mb-6">
               <input value={newCityName} onChange={(e) => setNewCityName(e.target.value)} placeholder="اسم المدينة الجديدة" className="flex-1 h-10 rounded-lg border border-border bg-background text-foreground px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
               <button type="submit" className="px-4 h-10 rounded-lg hero-gradient text-primary-foreground text-sm font-medium"><Plus className="w-4 h-4" /></button>
             </form>
             <div className="space-y-2">
               {cities.map((city) => (
-                <div key={city.id} className="bg-card rounded-lg border border-border p-3 flex items-center justify-between">
-                  <span className="text-sm text-foreground">{city.name}</span>
-                  <button onClick={() => handleDeleteCity(city.id)} className="p-1.5 rounded hover:bg-destructive/10 transition-colors"><Trash2 className="w-4 h-4 text-destructive" /></button>
+                <div key={city.id} className="bg-card rounded-xl border border-border p-3.5 flex items-center justify-between hover:shadow-sm transition-shadow">
+                  <span className="text-sm text-foreground font-medium">{city.name}</span>
+                  <button onClick={() => handleDeleteCity(city.id)} className="p-1.5 rounded-lg hover:bg-destructive/10 transition-colors"><Trash2 className="w-4 h-4 text-destructive" /></button>
                 </div>
               ))}
             </div>
@@ -476,30 +562,45 @@ const AdminDashboard = () => {
         {activeTab === 'import' && (
           <div>
             <h2 className="text-lg font-bold text-foreground mb-4">جلب الوظائف تلقائياً</h2>
-            <div className="bg-card rounded-xl border border-border p-6 card-shadow">
-              <p className="text-sm text-muted-foreground mb-4">
-                جلب أحدث الوظائف من موقع "أي وظيفة" (ewdifh.com) تلقائياً. النظام يتحقق من عدم تكرار الوظائف قبل الإضافة.
-              </p>
-              <button
-                onClick={handleScrapeJobs}
-                disabled={scraping}
-                className="flex items-center gap-2 px-6 py-3 rounded-lg hero-gradient text-primary-foreground font-bold text-sm hover:opacity-90 transition-opacity disabled:opacity-50"
-              >
-                {scraping ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-                {scraping ? 'جاري الجلب...' : 'جلب الوظائف الآن'}
-              </button>
+            <div className="bg-card rounded-xl border border-border p-6 card-shadow space-y-6">
+              {/* Status Card */}
+              <div className="flex items-center gap-4 p-4 rounded-xl bg-accent/5 border border-accent/20">
+                <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center">
+                  <CheckCircle2 className="w-6 h-6 text-accent" />
+                </div>
+                <div>
+                  <p className="font-bold text-foreground">النظام يعمل ✅</p>
+                  <p className="text-sm text-muted-foreground">الجلب التلقائي مُجدول كل ساعة من موقع "أي وظيفة"</p>
+                </div>
+              </div>
 
-              {scrapeResult && (
-                <div className="mt-4 p-4 rounded-lg bg-muted">
-                  <p className="text-sm font-medium text-foreground">{scrapeResult.message}</p>
-                  {scrapeResult.imported !== undefined && (
-                    <div className="flex gap-4 mt-2 text-xs text-muted-foreground">
-                      <span>✅ تم جلب: {scrapeResult.imported}</span>
-                      <span>⏭️ مكررة: {scrapeResult.skipped}</span>
-                    </div>
-                  )}
+              {/* Last Import Info */}
+              {lastImportedJob && (
+                <div className="p-4 rounded-xl bg-muted/50 border border-border">
+                  <p className="text-sm font-bold text-foreground mb-2 flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-primary" />
+                    آخر وظيفة تم جلبها
+                  </p>
+                  <p className="text-sm text-foreground">{lastImportedJob.title}</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {lastImportedJob.company_name} • {lastImportTime}
+                  </p>
                 </div>
               )}
+
+              <div>
+                <p className="text-sm text-muted-foreground mb-4">
+                  يمكنك أيضاً تشغيل الجلب يدوياً. النظام يتحقق تلقائياً من عدم تكرار الوظائف.
+                </p>
+                <button
+                  onClick={handleScrapeJobs}
+                  disabled={scraping}
+                  className="flex items-center gap-2 px-6 py-3 rounded-xl hero-gradient text-primary-foreground font-bold text-sm hover:opacity-90 transition-opacity disabled:opacity-50 shadow-md"
+                >
+                  {scraping ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                  {scraping ? 'جاري الجلب...' : 'جلب الوظائف الآن'}
+                </button>
+              </div>
             </div>
           </div>
         )}

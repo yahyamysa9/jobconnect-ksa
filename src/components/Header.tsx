@@ -1,6 +1,7 @@
 import { Search, Menu, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useState } from 'react';
+import NotificationBell from './NotificationBell';
 
 const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -23,6 +24,7 @@ const Header = () => {
         </nav>
 
         <div className="flex items-center gap-3">
+          <NotificationBell />
           <Link to="/search" className="p-2 rounded-lg hover:bg-muted transition-colors">
             <Search className="w-5 h-5 text-muted-foreground" />
           </Link>

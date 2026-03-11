@@ -1,8 +1,8 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { Plus, Pencil, Trash2, LogOut, LayoutDashboard, Briefcase, Tag, MapPin, Download, Loader2, BarChart3, MessageSquare, Eye, EyeOff, Clock, CheckCircle2, AlertCircle, RefreshCw, Home } from 'lucide-react';
+import { Plus, Pencil, Trash2, LogOut, LayoutDashboard, Briefcase, Tag, MapPin, Download, Loader2, BarChart3, MessageSquare, Eye, EyeOff, Clock, CheckCircle2, AlertCircle, RefreshCw, Home, ClipboardPaste, Sparkles, X } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { formatDistanceToNow } from 'date-fns';
 import { ar } from 'date-fns/locale';

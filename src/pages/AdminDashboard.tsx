@@ -55,6 +55,9 @@ const AdminDashboard = () => {
   const [scrapeResult, setScrapeResult] = useState<{ message: string; imported?: number; skipped?: number } | null>(null);
   const [messages, setMessages] = useState<ContactMessage[]>([]);
   const [expandedMessage, setExpandedMessage] = useState<string | null>(null);
+  const [pasteMode, setPasteMode] = useState(false);
+  const [pasteText, setPasteText] = useState('');
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (!loading && (!user || !isAdmin)) {

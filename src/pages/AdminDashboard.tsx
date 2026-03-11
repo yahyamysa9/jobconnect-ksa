@@ -1,8 +1,8 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { Plus, Pencil, Trash2, LogOut, LayoutDashboard, Briefcase, Tag, MapPin, Download, Loader2, BarChart3, MessageSquare, Eye, EyeOff, Clock, CheckCircle2, AlertCircle, RefreshCw, Home } from 'lucide-react';
+import { Plus, Pencil, Trash2, LogOut, LayoutDashboard, Briefcase, Tag, MapPin, Download, Loader2, BarChart3, MessageSquare, Eye, EyeOff, Clock, CheckCircle2, AlertCircle, RefreshCw, Home, ClipboardPaste, Sparkles, X } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { formatDistanceToNow } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -55,6 +55,9 @@ const AdminDashboard = () => {
   const [scrapeResult, setScrapeResult] = useState<{ message: string; imported?: number; skipped?: number } | null>(null);
   const [messages, setMessages] = useState<ContactMessage[]>([]);
   const [expandedMessage, setExpandedMessage] = useState<string | null>(null);
+  const [pasteMode, setPasteMode] = useState(false);
+  const [pasteText, setPasteText] = useState('');
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (!loading && (!user || !isAdmin)) {
@@ -110,11 +113,71 @@ const AdminDashboard = () => {
   const resetJobForm = () => {
     setJobTitle(''); setJobCompany(''); setJobCity(''); setJobCategory('');
     setJobDescription(''); setJobRequirements(''); setJobApplyLink('');
-    setEditingJob(null); setShowJobForm(false);
+    setEditingJob(null); setShowJobForm(false); setPasteMode(false); setPasteText('');
   };
 
+  const parseJadaratPaste = useCallback((text: string) => {
+    const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+    
+    // Try to extract title (usually first meaningful line)
+    const titleLine = lines[0] || '';
+    setJobTitle(titleLine);
+    
+    // Try to find company/entity name
+    const companyPatterns = [/(?:جهة|شركة|مؤسسة|منشأة|صاحب العمل|الجهة)[:\s]+(.+)/i, /(?:Company|Employer)[:\s]+(.+)/i];
+    for (const pattern of companyPatterns) {
+      const match = lines.find(l => pattern.test(l));
+      if (match) { setJobCompany(match.replace(pattern, '$1').trim()); break; }
+    }
+    
+    // Try to find city
+    const knownCities = cities.map(c => c.name);
+    const cityMatch = lines.find(l => knownCities.some(c => l.includes(c)));
+    if (cityMatch) {
+      const found = knownCities.find(c => cityMatch.includes(c));
+      if (found) setJobCity(found);
+    } else {
+      const cityPatterns = [/(?:المدينة|الموقع|مقر العمل|المنطقة|مكان العمل)[:\s]+(.+)/i, /(?:City|Location)[:\s]+(.+)/i];
+      for (const pattern of cityPatterns) {
+        const match = lines.find(l => pattern.test(l));
+        if (match) { setJobCity(match.replace(pattern, '$1').trim()); break; }
+      }
+    }
+    
+    // Try to find category
+    const knownCategories = categories.map(c => c.name);
+    const catMatch = lines.find(l => knownCategories.some(c => l.includes(c)));
+    if (catMatch) {
+      const found = knownCategories.find(c => catMatch.includes(c));
+      if (found) setJobCategory(found);
+    }
+    
+    // Extract requirements (lines starting with - or • or numbers)
+    const reqLines = lines.filter(l => /^[-•●\d.)\s]/.test(l) && l.length > 5);
+    if (reqLines.length > 0) {
+      setJobRequirements(reqLines.map(l => l.replace(/^[-•●\d.)]+\s*/, '').trim()).join('\n'));
+    }
+    
+    // Remaining text as description
+    const usedLines = new Set([titleLine, ...reqLines]);
+    const descLines = lines.filter(l => !usedLines.has(l) && l.length > 10);
+    if (descLines.length > 0) {
+      setJobDescription(descLines.join('\n'));
+    }
+    
+    // Try to find apply link
+    const linkMatch = lines.find(l => /https?:\/\//.test(l));
+    if (linkMatch) {
+      const url = linkMatch.match(/(https?:\/\/[^\s]+)/);
+      if (url) setJobApplyLink(url[1]);
+    }
+    
+    setPasteMode(false);
+    setPasteText('');
+  }, [cities, categories]);
+
   const handleSaveJob = async (e: React.FormEvent) => {
-    e.preventDefault();
+    e.preventDefault?.();
     const jobData = {
       title: jobTitle,
       company_name: jobCompany,
@@ -430,24 +493,100 @@ const AdminDashboard = () => {
 
             {showJobForm && (
               <div className="bg-card rounded-xl border border-border p-6 card-shadow mb-6">
-                <h3 className="font-bold text-foreground mb-4">{editingJob ? 'تعديل وظيفة' : 'إضافة وظيفة جديدة'}</h3>
-                <form onSubmit={handleSaveJob} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <input value={jobTitle} onChange={(e) => setJobTitle(e.target.value)} placeholder="عنوان الوظيفة" required className="h-10 rounded-lg border border-border bg-background text-foreground px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
-                  <input value={jobCompany} onChange={(e) => setJobCompany(e.target.value)} placeholder="اسم الجهة" required className="h-10 rounded-lg border border-border bg-background text-foreground px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
-                  <select value={jobCity} onChange={(e) => setJobCity(e.target.value)} required className="h-10 rounded-lg border border-border bg-background text-foreground px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
-                    <option value="">اختر المدينة</option>
-                    {cities.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
-                  </select>
-                  <select value={jobCategory} onChange={(e) => setJobCategory(e.target.value)} required className="h-10 rounded-lg border border-border bg-background text-foreground px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
-                    <option value="">اختر التصنيف</option>
-                    {categories.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
-                  </select>
-                  <input value={jobApplyLink} onChange={(e) => setJobApplyLink(e.target.value)} placeholder="رابط التقديم" className="h-10 rounded-lg border border-border bg-background text-foreground px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring md:col-span-2" />
-                  <textarea value={jobDescription} onChange={(e) => setJobDescription(e.target.value)} placeholder="وصف الوظيفة" rows={3} className="rounded-lg border border-border bg-background text-foreground p-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring md:col-span-2" />
-                  <textarea value={jobRequirements} onChange={(e) => setJobRequirements(e.target.value)} placeholder="الشروط (كل شرط في سطر)" rows={3} className="rounded-lg border border-border bg-background text-foreground p-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring md:col-span-2" />
-                  <div className="md:col-span-2 flex gap-2">
-                    <button type="submit" className="px-6 py-2 rounded-lg hero-gradient text-primary-foreground text-sm font-medium">حفظ</button>
-                    <button type="button" onClick={resetJobForm} className="px-6 py-2 rounded-lg border border-border text-muted-foreground text-sm hover:text-foreground transition-colors">إلغاء</button>
+                <div className="flex items-center justify-between mb-5">
+                  <h3 className="font-bold text-foreground text-base">{editingJob ? 'تعديل وظيفة' : 'إضافة وظيفة جديدة'}</h3>
+                  <div className="flex items-center gap-2">
+                    {!editingJob && (
+                      <button
+                        type="button"
+                        onClick={() => setPasteMode(!pasteMode)}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                          pasteMode
+                            ? 'bg-primary/10 text-primary border border-primary/30'
+                            : 'bg-muted text-muted-foreground hover:text-foreground border border-border'
+                        }`}
+                      >
+                        <ClipboardPaste className="w-3.5 h-3.5" />
+                        لصق من جدارات
+                      </button>
+                    )}
+                    <button type="button" onClick={resetJobForm} className="p-1.5 rounded-lg hover:bg-muted transition-colors">
+                      <X className="w-4 h-4 text-muted-foreground" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Paste from Jadarat */}
+                {pasteMode && (
+                  <div className="mb-5 p-4 rounded-xl bg-primary/5 border border-primary/20">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Sparkles className="w-4 h-4 text-primary" />
+                      <p className="text-sm font-bold text-foreground">لصق ذكي من جدارات</p>
+                    </div>
+                    <p className="text-xs text-muted-foreground mb-3">
+                      انسخ تفاصيل الوظيفة من موقع جدارات والصقها هنا. سيتم تعبئة الحقول تلقائياً.
+                    </p>
+                    <textarea
+                      value={pasteText}
+                      onChange={(e) => setPasteText(e.target.value)}
+                      placeholder="الصق هنا نص الوظيفة المنسوخ من جدارات..."
+                      rows={6}
+                      className="w-full rounded-lg border border-primary/20 bg-background text-foreground p-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 mb-3"
+                      dir="rtl"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => parseJadaratPaste(pasteText)}
+                      disabled={!pasteText.trim()}
+                      className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+                    >
+                      <Sparkles className="w-3.5 h-3.5" />
+                      تعبئة الحقول تلقائياً
+                    </button>
+                  </div>
+                )}
+
+                <form onSubmit={async (e) => { e.preventDefault(); setSaving(true); await handleSaveJob(e); setSaving(false); }} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-muted-foreground">عنوان الوظيفة *</label>
+                    <input value={jobTitle} onChange={(e) => setJobTitle(e.target.value)} placeholder="مثال: مطور برمجيات" required className="h-10 w-full rounded-lg border border-border bg-background text-foreground px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-muted-foreground">اسم الجهة *</label>
+                    <input value={jobCompany} onChange={(e) => setJobCompany(e.target.value)} placeholder="مثال: وزارة الصحة" required className="h-10 w-full rounded-lg border border-border bg-background text-foreground px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-muted-foreground">المدينة *</label>
+                    <select value={jobCity} onChange={(e) => setJobCity(e.target.value)} required className="h-10 w-full rounded-lg border border-border bg-background text-foreground px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+                      <option value="">اختر المدينة</option>
+                      {cities.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
+                    </select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-muted-foreground">التصنيف *</label>
+                    <select value={jobCategory} onChange={(e) => setJobCategory(e.target.value)} required className="h-10 w-full rounded-lg border border-border bg-background text-foreground px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+                      <option value="">اختر التصنيف</option>
+                      {categories.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
+                    </select>
+                  </div>
+                  <div className="space-y-1.5 md:col-span-2">
+                    <label className="text-xs font-medium text-muted-foreground">رابط التقديم</label>
+                    <input value={jobApplyLink} onChange={(e) => setJobApplyLink(e.target.value)} placeholder="https://jadarat.sa/..." className="h-10 w-full rounded-lg border border-border bg-background text-foreground px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring" dir="ltr" />
+                  </div>
+                  <div className="space-y-1.5 md:col-span-2">
+                    <label className="text-xs font-medium text-muted-foreground">وصف الوظيفة</label>
+                    <textarea value={jobDescription} onChange={(e) => setJobDescription(e.target.value)} placeholder="أدخل وصف الوظيفة والمسؤوليات..." rows={4} className="w-full rounded-lg border border-border bg-background text-foreground p-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+                  </div>
+                  <div className="space-y-1.5 md:col-span-2">
+                    <label className="text-xs font-medium text-muted-foreground">الشروط والمتطلبات <span className="text-muted-foreground/60">(كل شرط في سطر)</span></label>
+                    <textarea value={jobRequirements} onChange={(e) => setJobRequirements(e.target.value)} placeholder="بكالوريوس في تقنية المعلومات&#10;خبرة 3 سنوات&#10;إجادة اللغة الإنجليزية" rows={4} className="w-full rounded-lg border border-border bg-background text-foreground p-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+                  </div>
+                  <div className="md:col-span-2 flex gap-2 pt-2">
+                    <button type="submit" disabled={saving} className="flex items-center gap-2 px-6 py-2.5 rounded-lg hero-gradient text-primary-foreground text-sm font-medium shadow-md disabled:opacity-50">
+                      {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                      {saving ? 'جاري الحفظ...' : editingJob ? 'تحديث الوظيفة' : 'نشر الوظيفة'}
+                    </button>
+                    <button type="button" onClick={resetJobForm} className="px-6 py-2.5 rounded-lg border border-border text-muted-foreground text-sm hover:text-foreground transition-colors">إلغاء</button>
                   </div>
                 </form>
               </div>

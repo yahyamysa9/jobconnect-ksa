@@ -177,7 +177,7 @@ const AdminDashboard = () => {
   }, [cities, categories]);
 
   const handleSaveJob = async (e: React.FormEvent) => {
-    e.preventDefault();
+    e.preventDefault?.();
     const jobData = {
       title: jobTitle,
       company_name: jobCompany,

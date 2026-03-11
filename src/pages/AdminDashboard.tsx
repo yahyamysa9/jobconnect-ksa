@@ -113,8 +113,68 @@ const AdminDashboard = () => {
   const resetJobForm = () => {
     setJobTitle(''); setJobCompany(''); setJobCity(''); setJobCategory('');
     setJobDescription(''); setJobRequirements(''); setJobApplyLink('');
-    setEditingJob(null); setShowJobForm(false);
+    setEditingJob(null); setShowJobForm(false); setPasteMode(false); setPasteText('');
   };
+
+  const parseJadaratPaste = useCallback((text: string) => {
+    const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+    
+    // Try to extract title (usually first meaningful line)
+    const titleLine = lines[0] || '';
+    setJobTitle(titleLine);
+    
+    // Try to find company/entity name
+    const companyPatterns = [/(?:جهة|شركة|مؤسسة|منشأة|صاحب العمل|الجهة)[:\s]+(.+)/i, /(?:Company|Employer)[:\s]+(.+)/i];
+    for (const pattern of companyPatterns) {
+      const match = lines.find(l => pattern.test(l));
+      if (match) { setJobCompany(match.replace(pattern, '$1').trim()); break; }
+    }
+    
+    // Try to find city
+    const knownCities = cities.map(c => c.name);
+    const cityMatch = lines.find(l => knownCities.some(c => l.includes(c)));
+    if (cityMatch) {
+      const found = knownCities.find(c => cityMatch.includes(c));
+      if (found) setJobCity(found);
+    } else {
+      const cityPatterns = [/(?:المدينة|الموقع|مقر العمل|المنطقة|مكان العمل)[:\s]+(.+)/i, /(?:City|Location)[:\s]+(.+)/i];
+      for (const pattern of cityPatterns) {
+        const match = lines.find(l => pattern.test(l));
+        if (match) { setJobCity(match.replace(pattern, '$1').trim()); break; }
+      }
+    }
+    
+    // Try to find category
+    const knownCategories = categories.map(c => c.name);
+    const catMatch = lines.find(l => knownCategories.some(c => l.includes(c)));
+    if (catMatch) {
+      const found = knownCategories.find(c => catMatch.includes(c));
+      if (found) setJobCategory(found);
+    }
+    
+    // Extract requirements (lines starting with - or • or numbers)
+    const reqLines = lines.filter(l => /^[-•●\d.)\s]/.test(l) && l.length > 5);
+    if (reqLines.length > 0) {
+      setJobRequirements(reqLines.map(l => l.replace(/^[-•●\d.)]+\s*/, '').trim()).join('\n'));
+    }
+    
+    // Remaining text as description
+    const usedLines = new Set([titleLine, ...reqLines]);
+    const descLines = lines.filter(l => !usedLines.has(l) && l.length > 10);
+    if (descLines.length > 0) {
+      setJobDescription(descLines.join('\n'));
+    }
+    
+    // Try to find apply link
+    const linkMatch = lines.find(l => /https?:\/\//.test(l));
+    if (linkMatch) {
+      const url = linkMatch.match(/(https?:\/\/[^\s]+)/);
+      if (url) setJobApplyLink(url[1]);
+    }
+    
+    setPasteMode(false);
+    setPasteText('');
+  }, [cities, categories]);
 
   const handleSaveJob = async (e: React.FormEvent) => {
     e.preventDefault();

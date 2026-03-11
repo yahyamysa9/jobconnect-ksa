@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import Header from '@/components/Header';
 
 const AdminLogin = () => {
@@ -8,6 +9,27 @@ const AdminLogin = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotMsg, setForgotMsg] = useState('');
+
+  const handleForgotPassword = async () => {
+    if (!email) {
+      setError('أدخل بريدك الإلكتروني أولاً');
+      return;
+    }
+    setForgotLoading(true);
+    setError('');
+    setForgotMsg('');
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    setForgotLoading(false);
+    if (error) {
+      setError('حدث خطأ أثناء إرسال رابط الاستعادة');
+    } else {
+      setForgotMsg('تم إرسال رابط إعادة التعيين إلى بريدك الإلكتروني');
+    }
+  };
   const { signIn, user, isAdmin, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
@@ -68,6 +90,17 @@ const AdminLogin = () => {
               </div>
 
               {error && <p className="text-sm text-destructive">{error}</p>}
+
+              {forgotMsg && <p className="text-sm text-green-600">{forgotMsg}</p>}
+
+              <button
+                type="button"
+                onClick={handleForgotPassword}
+                disabled={forgotLoading}
+                className="text-sm text-primary hover:underline"
+              >
+                {forgotLoading ? 'جاري الإرسال...' : 'نسيت كلمة المرور؟'}
+              </button>
 
               <button
                 type="submit"

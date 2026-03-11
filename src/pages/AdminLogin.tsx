@@ -69,6 +69,17 @@ const AdminLogin = () => {
 
               {error && <p className="text-sm text-destructive">{error}</p>}
 
+              {forgotMsg && <p className="text-sm text-green-600">{forgotMsg}</p>}
+
+              <button
+                type="button"
+                onClick={handleForgotPassword}
+                disabled={forgotLoading}
+                className="text-sm text-primary hover:underline"
+              >
+                {forgotLoading ? 'جاري الإرسال...' : 'نسيت كلمة المرور؟'}
+              </button>
+
               <button
                 type="submit"
                 disabled={loading}
